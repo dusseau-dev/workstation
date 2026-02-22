@@ -3,6 +3,7 @@ import Script from "next/script";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Providers } from "@/app/providers";
 import { Header } from "@/components/header";
+import { AgentationDev } from "@/components/agentation-dev";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -71,6 +72,7 @@ export default function RootLayout({
             <Header />
             {children}
           </div>
+          <AgentationDev />
         </Providers>
       </body>
     </html>

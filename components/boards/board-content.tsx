@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Settings, Trash2, Plus, Pencil } from "lucide-react";
+import { Settings, Trash2, Plus, Pencil, Zap } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,6 +20,8 @@ import { useModalQuery } from "@/lib/use-modal-query";
 import { ActionHeading } from "./action-heading";
 import { FIND_UNIQUE_BOARD } from "@/lib/constants";
 import { KanbanContent, KanbanOverlay } from "@/components/boards/kanban-content";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { BoardAutomations } from "@/components/boards/board-automations";
 
 type TaskWithAssignee = Task & { assignee: User | null };
 
@@ -100,9 +102,12 @@ export function BoardContent({ slug, initialData }: Props) {
     );
   }, [board?.columns]);
 
-  useEffect(() => {
+  // Sync server data into local optimistic state during render (avoids extra useEffect cycle)
+  const prevServerData = useRef(serverKanbanData);
+  if (prevServerData.current !== serverKanbanData) {
+    prevServerData.current = serverKanbanData;
     setKanbanState(serverKanbanData);
-  }, [serverKanbanData]);
+  }
 
   // Handle kanban updates
   const handleKanbanChange = useCallback(
@@ -273,36 +278,52 @@ export function BoardContent({ slug, initialData }: Props) {
         </DropdownMenu>
       </ActionHeading>
 
-      <div className="mb-8">
-        {board.columns && board.columns.length > 0 ? (
-          <KanbanContent
-            value={kanbanState}
-            onValueChange={handleKanbanChange}
-            columns={board.columns}
-          >
-            <KanbanOverlay />
-          </KanbanContent>
-        ) : (
-          <div className="text-center py-12">
-            <div className="flex flex-col items-center gap-4">
-              <div className="rounded-full bg-muted p-6">
-                <Plus className="h-8 w-8 text-muted-foreground" />
+      <Tabs defaultValue="kanban">
+        <TabsList>
+          <TabsTrigger value="kanban">Board</TabsTrigger>
+          <TabsTrigger value="automations">
+            <Zap className="h-3.5 w-3.5 mr-1.5" />
+            Automations
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="kanban">
+          <div className="mb-8">
+            {board.columns.length > 0 ? (
+              <KanbanContent
+                value={kanbanState}
+                onValueChange={handleKanbanChange}
+                columns={board.columns}
+              >
+                <KanbanOverlay />
+              </KanbanContent>
+            ) : (
+              <div className="text-center py-12">
+                <div className="flex flex-col items-center gap-4">
+                  <div className="rounded-full bg-muted p-6">
+                    <Plus className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="text-lg font-semibold">No columns yet</h3>
+                    <p className="text-muted-foreground max-w-md">
+                      This board doesn&apos;t have any columns yet. Create your
+                      first column to start organizing your tasks.
+                    </p>
+                  </div>
+                  <Button onClick={() => openAddColumnModal(board.id)}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Column
+                  </Button>
+                </div>
               </div>
-              <div className="space-y-2">
-                <h3 className="text-lg font-semibold">No columns yet</h3>
-                <p className="text-muted-foreground max-w-md">
-                  This board doesn&apos;t have any columns yet. Create your
-                  first column to start organizing your tasks.
-                </p>
-              </div>
-              <Button onClick={() => openAddColumnModal(board.id)}>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Column
-              </Button>
-            </div>
+            )}
           </div>
-        )}
-      </div>
+        </TabsContent>
+
+        <TabsContent value="automations">
+          <BoardAutomations boardId={board.id} columns={board.columns} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

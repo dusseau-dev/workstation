@@ -12,24 +12,30 @@ const VALID_MODAL_TYPES = [
   "add-task",
   "edit-task",
   "delete-task",
+  "add-workflow",
+  "edit-workflow",
+  "delete-workflow",
 ] as const;
 
 export interface QueryModalState {
   openModalType?: (typeof VALID_MODAL_TYPES)[number];
   selectedColumnId?: string;
   selectedTaskId?: string;
+  selectedWorkflowId?: string;
 }
 
 const modalStateSchema = z.object({
   openModalType: z.enum(VALID_MODAL_TYPES).optional(),
   selectedColumnId: z.string().optional(),
   selectedTaskId: z.string().optional(),
+  selectedWorkflowId: z.string().optional(),
 });
 
 const defaultModalState: QueryModalState = {
   openModalType: undefined,
   selectedColumnId: undefined,
   selectedTaskId: undefined,
+  selectedWorkflowId: undefined,
 };
 
 const modalStateParser = parseAsJson(modalStateSchema.parse)
@@ -42,7 +48,7 @@ export function useModalQuery() {
   const [modalState, setModalState] = useQueryState("modalState", modalStateParser);
 
   const closeQueryModal = useCallback(() => {
-    setModalState(prevState => ({ ...prevState, openModalType: undefined, selectedColumnId: undefined, selectedTaskId: undefined }));
+    setModalState(prevState => ({ ...prevState, openModalType: undefined, selectedColumnId: undefined, selectedTaskId: undefined, selectedWorkflowId: undefined }));
   }, [setModalState]);
 
   const openAddBoardModal = useCallback(() => {
@@ -81,6 +87,18 @@ export function useModalQuery() {
     setModalState(prevState => ({ ...prevState, openModalType: "delete-task", selectedColumnId: columnId, selectedTaskId: taskId }));
   }, [setModalState]);
 
+  const openAddWorkflowModal = useCallback(() => {
+    setModalState(prevState => ({ ...prevState, openModalType: "add-workflow" }));
+  }, [setModalState]);
+
+  const openEditWorkflowModal = useCallback((workflowId: string) => {
+    setModalState(prevState => ({ ...prevState, openModalType: "edit-workflow", selectedWorkflowId: workflowId }));
+  }, [setModalState]);
+
+  const openDeleteWorkflowModal = useCallback((workflowId: string) => {
+    setModalState(prevState => ({ ...prevState, openModalType: "delete-workflow", selectedWorkflowId: workflowId }));
+  }, [setModalState]);
+
   return {
     modalState,
     closeQueryModal,
@@ -93,5 +111,8 @@ export function useModalQuery() {
     openAddTaskModal,
     openEditTaskModal,
     openDeleteTaskModal,
+    openAddWorkflowModal,
+    openEditWorkflowModal,
+    openDeleteWorkflowModal,
   };
 }

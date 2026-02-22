@@ -20,7 +20,7 @@ export const auth = betterAuth({
     }),
     emailAndPassword: {
         enabled: true,
-		requireEmailVerification: true,
+		requireEmailVerification: false,
         async sendResetPassword({ user, url }) {
 			const name = user.name || user.email.split("@")[0]
 			await resend.emails.send({

@@ -14,5 +14,5 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
     // Protected routes
-    matcher: ["/boards/:path*", "/accept-invitation/:path*", "/posts/new", "/posts/:path/edit"]
+    matcher: ["/boards/:path*", "/workflows/:path*", "/accept-invitation/:path*", "/posts/new", "/posts/:path/edit"]
 }

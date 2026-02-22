@@ -3,9 +3,10 @@
  ******************************************************************************/
 
 /* eslint-disable */
-// @ts-nocheck
 
-const metadata = {
+import type { ModelMeta } from "@zenstackhq/runtime";
+
+const metadata: ModelMeta = {
     models: {
         user: {
             name: 'User', fields: {
@@ -80,6 +81,24 @@ const metadata = {
                     isDataModel: true,
                     isArray: true,
                     backLink: 'author',
+                }, createdWorkflows: {
+                    name: "createdWorkflows",
+                    type: "Workflow",
+                    isDataModel: true,
+                    isArray: true,
+                    backLink: 'createdBy',
+                }, triggeredExecutions: {
+                    name: "triggeredExecutions",
+                    type: "WorkflowExecution",
+                    isDataModel: true,
+                    isArray: true,
+                    backLink: 'triggeredByUser',
+                }, composioConnections: {
+                    name: "composioConnections",
+                    type: "ComposioConnection",
+                    isDataModel: true,
+                    isArray: true,
+                    backLink: 'user',
                 }, role: {
                     name: "role",
                     type: "String",
@@ -301,6 +320,30 @@ const metadata = {
                     isDataModel: true,
                     isArray: true,
                     backLink: 'organization',
+                }, workflows: {
+                    name: "workflows",
+                    type: "Workflow",
+                    isDataModel: true,
+                    isArray: true,
+                    backLink: 'organization',
+                }, workflowTriggers: {
+                    name: "workflowTriggers",
+                    type: "WorkflowTrigger",
+                    isDataModel: true,
+                    isArray: true,
+                    backLink: 'organization',
+                }, workflowExecutions: {
+                    name: "workflowExecutions",
+                    type: "WorkflowExecution",
+                    isDataModel: true,
+                    isArray: true,
+                    backLink: 'organization',
+                }, composioConnections: {
+                    name: "composioConnections",
+                    type: "ComposioConnection",
+                    isDataModel: true,
+                    isArray: true,
+                    backLink: 'organization',
                 },
             }, uniqueConstraints: {
                 id: {
@@ -417,14 +460,14 @@ const metadata = {
                     name: "id",
                     type: "String",
                     isId: true,
-                    attributes: [{ "name": "@default", "args": [] }],
+                    attributes: [{ "name": "@default", "args": [{ "name": "value" }] }],
                 }, name: {
                     name: "name",
                     type: "String",
                 }, createdAt: {
                     name: "createdAt",
                     type: "DateTime",
-                    attributes: [{ "name": "@default", "args": [] }],
+                    attributes: [{ "name": "@default", "args": [{ "name": "value" }] }],
                 }, organization: {
                     name: "organization",
                     type: "Organization",
@@ -437,7 +480,7 @@ const metadata = {
                     name: "organizationId",
                     type: "String",
                     isOptional: true,
-                    attributes: [{ "name": "@default", "args": [] }],
+                    attributes: [{ "name": "@default", "args": [{ "name": "value" }] }],
                     defaultValueProvider: $default$Board$organizationId,
                     isForeignKey: true,
                     relationField: 'organization',
@@ -451,7 +494,7 @@ const metadata = {
                 }, ownerId: {
                     name: "ownerId",
                     type: "String",
-                    attributes: [{ "name": "@default", "args": [] }],
+                    attributes: [{ "name": "@default", "args": [{ "name": "value" }] }],
                     defaultValueProvider: $default$Board$ownerId,
                     isForeignKey: true,
                     relationField: 'owner',
@@ -467,6 +510,18 @@ const metadata = {
                     isDataModel: true,
                     isArray: true,
                     backLink: 'userBoards',
+                }, workflowTriggers: {
+                    name: "workflowTriggers",
+                    type: "WorkflowTrigger",
+                    isDataModel: true,
+                    isArray: true,
+                    backLink: 'board',
+                }, workflowExecutions: {
+                    name: "workflowExecutions",
+                    type: "WorkflowExecution",
+                    isDataModel: true,
+                    isArray: true,
+                    backLink: 'board',
                 },
             }, uniqueConstraints: {
                 id: {
@@ -481,7 +536,7 @@ const metadata = {
                     name: "id",
                     type: "String",
                     isId: true,
-                    attributes: [{ "name": "@default", "args": [] }],
+                    attributes: [{ "name": "@default", "args": [{ "name": "value" }] }],
                 }, title: {
                     name: "title",
                     type: "String",
@@ -521,7 +576,7 @@ const metadata = {
                     name: "id",
                     type: "String",
                     isId: true,
-                    attributes: [{ "name": "@default", "args": [] }],
+                    attributes: [{ "name": "@default", "args": [{ "name": "value" }] }],
                 }, title: {
                     name: "title",
                     type: "String",
@@ -532,11 +587,11 @@ const metadata = {
                 }, priority: {
                     name: "priority",
                     type: "Priority",
-                    attributes: [{ "name": "@default", "args": [] }],
+                    attributes: [{ "name": "@default", "args": [{ "name": "value" }] }],
                 }, createdAt: {
                     name: "createdAt",
                     type: "DateTime",
-                    attributes: [{ "name": "@default", "args": [] }],
+                    attributes: [{ "name": "@default", "args": [{ "name": "value" }] }],
                 }, updatedAt: {
                     name: "updatedAt",
                     type: "DateTime",
@@ -578,7 +633,7 @@ const metadata = {
                 }, isArchived: {
                     name: "isArchived",
                     type: "Boolean",
-                    attributes: [{ "name": "@default", "args": [{ "value": false }] }],
+                    attributes: [{ "name": "@default", "args": [{ "name": "value", "value": false }] }],
                 },
             }, uniqueConstraints: {
                 id: {
@@ -593,7 +648,7 @@ const metadata = {
                     name: "id",
                     type: "String",
                     isId: true,
-                    attributes: [{ "name": "@default", "args": [] }],
+                    attributes: [{ "name": "@default", "args": [{ "name": "value" }] }],
                 }, name: {
                     name: "name",
                     type: "String",
@@ -607,7 +662,7 @@ const metadata = {
                 }, createdAt: {
                     name: "createdAt",
                     type: "DateTime",
-                    attributes: [{ "name": "@default", "args": [] }],
+                    attributes: [{ "name": "@default", "args": [{ "name": "value" }] }],
                 }, updatedAt: {
                     name: "updatedAt",
                     type: "DateTime",
@@ -638,7 +693,7 @@ const metadata = {
                     name: "id",
                     type: "String",
                     isId: true,
-                    attributes: [{ "name": "@default", "args": [] }],
+                    attributes: [{ "name": "@default", "args": [{ "name": "value" }] }],
                 }, post: {
                     name: "post",
                     type: "Post",
@@ -682,7 +737,7 @@ const metadata = {
                     name: "id",
                     type: "String",
                     isId: true,
-                    attributes: [{ "name": "@default", "args": [] }],
+                    attributes: [{ "name": "@default", "args": [{ "name": "value" }] }],
                 }, title: {
                     name: "title",
                     type: "String",
@@ -702,7 +757,7 @@ const metadata = {
                 }, published: {
                     name: "published",
                     type: "Boolean",
-                    attributes: [{ "name": "@default", "args": [{ "value": false }] }],
+                    attributes: [{ "name": "@default", "args": [{ "name": "value", "value": false }] }],
                 }, publishedAt: {
                     name: "publishedAt",
                     type: "DateTime",
@@ -710,7 +765,7 @@ const metadata = {
                 }, createdAt: {
                     name: "createdAt",
                     type: "DateTime",
-                    attributes: [{ "name": "@default", "args": [] }],
+                    attributes: [{ "name": "@default", "args": [{ "name": "value" }] }],
                 }, updatedAt: {
                     name: "updatedAt",
                     type: "DateTime",
@@ -725,7 +780,7 @@ const metadata = {
                 }, authorId: {
                     name: "authorId",
                     type: "String",
-                    attributes: [{ "name": "@default", "args": [] }],
+                    attributes: [{ "name": "@default", "args": [{ "name": "value" }] }],
                     defaultValueProvider: $default$Post$authorId,
                     isForeignKey: true,
                     relationField: 'author',
@@ -743,6 +798,421 @@ const metadata = {
                 }, slug: {
                     name: "slug",
                     fields: ["slug"]
+                },
+            },
+        },
+        workflow: {
+            name: 'Workflow', fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    isId: true,
+                    attributes: [{ "name": "@default", "args": [{ "name": "value" }] }],
+                }, name: {
+                    name: "name",
+                    type: "String",
+                }, description: {
+                    name: "description",
+                    type: "String",
+                    isOptional: true,
+                }, status: {
+                    name: "status",
+                    type: "WorkflowStatus",
+                    attributes: [{ "name": "@default", "args": [{ "name": "value" }] }],
+                }, nodesJson: {
+                    name: "nodesJson",
+                    type: "Json",
+                    attributes: [{ "name": "@default", "args": [{ "name": "value", "value": "[]" }] }],
+                }, edgesJson: {
+                    name: "edgesJson",
+                    type: "Json",
+                    attributes: [{ "name": "@default", "args": [{ "name": "value", "value": "[]" }] }],
+                }, organization: {
+                    name: "organization",
+                    type: "Organization",
+                    isDataModel: true,
+                    backLink: 'workflows',
+                    isRelationOwner: true,
+                    foreignKeyMapping: { "id": "organizationId" },
+                }, organizationId: {
+                    name: "organizationId",
+                    type: "String",
+                    attributes: [{ "name": "@default", "args": [{ "name": "value" }] }],
+                    defaultValueProvider: $default$Workflow$organizationId,
+                    isForeignKey: true,
+                    relationField: 'organization',
+                }, createdBy: {
+                    name: "createdBy",
+                    type: "User",
+                    isDataModel: true,
+                    backLink: 'createdWorkflows',
+                    isRelationOwner: true,
+                    foreignKeyMapping: { "id": "createdById" },
+                }, createdById: {
+                    name: "createdById",
+                    type: "String",
+                    attributes: [{ "name": "@default", "args": [{ "name": "value" }] }],
+                    defaultValueProvider: $default$Workflow$createdById,
+                    isForeignKey: true,
+                    relationField: 'createdBy',
+                }, triggers: {
+                    name: "triggers",
+                    type: "WorkflowTrigger",
+                    isDataModel: true,
+                    isArray: true,
+                    backLink: 'workflow',
+                }, executions: {
+                    name: "executions",
+                    type: "WorkflowExecution",
+                    isDataModel: true,
+                    isArray: true,
+                    backLink: 'workflow',
+                }, createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ "name": "@default", "args": [{ "name": "value" }] }],
+                }, updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    attributes: [{ "name": "@updatedAt", "args": [] }],
+                },
+            }, uniqueConstraints: {
+                id: {
+                    name: "id",
+                    fields: ["id"]
+                },
+            },
+        },
+        workflowTrigger: {
+            name: 'WorkflowTrigger', fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    isId: true,
+                    attributes: [{ "name": "@default", "args": [{ "name": "value" }] }],
+                }, organization: {
+                    name: "organization",
+                    type: "Organization",
+                    isDataModel: true,
+                    backLink: 'workflowTriggers',
+                    isRelationOwner: true,
+                    foreignKeyMapping: { "id": "organizationId" },
+                }, organizationId: {
+                    name: "organizationId",
+                    type: "String",
+                    attributes: [{ "name": "@default", "args": [{ "name": "value" }] }],
+                    defaultValueProvider: $default$WorkflowTrigger$organizationId,
+                    isForeignKey: true,
+                    relationField: 'organization',
+                }, workflow: {
+                    name: "workflow",
+                    type: "Workflow",
+                    isDataModel: true,
+                    backLink: 'triggers',
+                    isRelationOwner: true,
+                    onDeleteAction: 'Cascade',
+                    foreignKeyMapping: { "id": "workflowId" },
+                }, workflowId: {
+                    name: "workflowId",
+                    type: "String",
+                    isForeignKey: true,
+                    relationField: 'workflow',
+                }, board: {
+                    name: "board",
+                    type: "Board",
+                    isDataModel: true,
+                    isOptional: true,
+                    backLink: 'workflowTriggers',
+                    isRelationOwner: true,
+                    foreignKeyMapping: { "id": "boardId" },
+                }, boardId: {
+                    name: "boardId",
+                    type: "String",
+                    isOptional: true,
+                    isForeignKey: true,
+                    relationField: 'board',
+                }, triggerType: {
+                    name: "triggerType",
+                    type: "TriggerType",
+                }, configJson: {
+                    name: "configJson",
+                    type: "Json",
+                    attributes: [{ "name": "@default", "args": [{ "name": "value", "value": "{}" }] }],
+                }, enabled: {
+                    name: "enabled",
+                    type: "Boolean",
+                    attributes: [{ "name": "@default", "args": [{ "name": "value", "value": true }] }],
+                }, executions: {
+                    name: "executions",
+                    type: "WorkflowExecution",
+                    isDataModel: true,
+                    isArray: true,
+                    backLink: 'trigger',
+                }, createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ "name": "@default", "args": [{ "name": "value" }] }],
+                }, updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    attributes: [{ "name": "@updatedAt", "args": [] }],
+                },
+            }, uniqueConstraints: {
+                id: {
+                    name: "id",
+                    fields: ["id"]
+                },
+            },
+        },
+        workflowExecution: {
+            name: 'WorkflowExecution', fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    isId: true,
+                    attributes: [{ "name": "@default", "args": [{ "name": "value" }] }],
+                }, organization: {
+                    name: "organization",
+                    type: "Organization",
+                    isDataModel: true,
+                    backLink: 'workflowExecutions',
+                    isRelationOwner: true,
+                    foreignKeyMapping: { "id": "organizationId" },
+                }, organizationId: {
+                    name: "organizationId",
+                    type: "String",
+                    attributes: [{ "name": "@default", "args": [{ "name": "value" }] }],
+                    defaultValueProvider: $default$WorkflowExecution$organizationId,
+                    isForeignKey: true,
+                    relationField: 'organization',
+                }, workflow: {
+                    name: "workflow",
+                    type: "Workflow",
+                    isDataModel: true,
+                    backLink: 'executions',
+                    isRelationOwner: true,
+                    onDeleteAction: 'Cascade',
+                    foreignKeyMapping: { "id": "workflowId" },
+                }, workflowId: {
+                    name: "workflowId",
+                    type: "String",
+                    isForeignKey: true,
+                    relationField: 'workflow',
+                }, board: {
+                    name: "board",
+                    type: "Board",
+                    isDataModel: true,
+                    isOptional: true,
+                    backLink: 'workflowExecutions',
+                    isRelationOwner: true,
+                    foreignKeyMapping: { "id": "boardId" },
+                }, boardId: {
+                    name: "boardId",
+                    type: "String",
+                    isOptional: true,
+                    isForeignKey: true,
+                    relationField: 'board',
+                }, cardId: {
+                    name: "cardId",
+                    type: "String",
+                    isOptional: true,
+                }, status: {
+                    name: "status",
+                    type: "ExecutionStatus",
+                    attributes: [{ "name": "@default", "args": [{ "name": "value" }] }],
+                }, inputJson: {
+                    name: "inputJson",
+                    type: "Json",
+                    isOptional: true,
+                }, outputJson: {
+                    name: "outputJson",
+                    type: "Json",
+                    isOptional: true,
+                }, error: {
+                    name: "error",
+                    type: "String",
+                    isOptional: true,
+                }, triggeredByUser: {
+                    name: "triggeredByUser",
+                    type: "User",
+                    isDataModel: true,
+                    isOptional: true,
+                    backLink: 'triggeredExecutions',
+                    isRelationOwner: true,
+                    foreignKeyMapping: { "id": "triggeredByUserId" },
+                }, triggeredByUserId: {
+                    name: "triggeredByUserId",
+                    type: "String",
+                    isOptional: true,
+                    isForeignKey: true,
+                    relationField: 'triggeredByUser',
+                }, trigger: {
+                    name: "trigger",
+                    type: "WorkflowTrigger",
+                    isDataModel: true,
+                    isOptional: true,
+                    backLink: 'executions',
+                    isRelationOwner: true,
+                    foreignKeyMapping: { "id": "triggerId" },
+                }, triggerId: {
+                    name: "triggerId",
+                    type: "String",
+                    isOptional: true,
+                    isForeignKey: true,
+                    relationField: 'trigger',
+                }, startedAt: {
+                    name: "startedAt",
+                    type: "DateTime",
+                    attributes: [{ "name": "@default", "args": [{ "name": "value" }] }],
+                }, completedAt: {
+                    name: "completedAt",
+                    type: "DateTime",
+                    isOptional: true,
+                }, logs: {
+                    name: "logs",
+                    type: "WorkflowExecutionLog",
+                    isDataModel: true,
+                    isArray: true,
+                    backLink: 'execution',
+                }, createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ "name": "@default", "args": [{ "name": "value" }] }],
+                }, updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    attributes: [{ "name": "@updatedAt", "args": [] }],
+                },
+            }, uniqueConstraints: {
+                id: {
+                    name: "id",
+                    fields: ["id"]
+                },
+            },
+        },
+        workflowExecutionLog: {
+            name: 'WorkflowExecutionLog', fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    isId: true,
+                    attributes: [{ "name": "@default", "args": [{ "name": "value" }] }],
+                }, execution: {
+                    name: "execution",
+                    type: "WorkflowExecution",
+                    isDataModel: true,
+                    backLink: 'logs',
+                    isRelationOwner: true,
+                    onDeleteAction: 'Cascade',
+                    foreignKeyMapping: { "id": "executionId" },
+                }, executionId: {
+                    name: "executionId",
+                    type: "String",
+                    isForeignKey: true,
+                    relationField: 'execution',
+                }, nodeId: {
+                    name: "nodeId",
+                    type: "String",
+                }, nodeName: {
+                    name: "nodeName",
+                    type: "String",
+                }, status: {
+                    name: "status",
+                    type: "LogStatus",
+                    attributes: [{ "name": "@default", "args": [{ "name": "value" }] }],
+                }, inputJson: {
+                    name: "inputJson",
+                    type: "Json",
+                    isOptional: true,
+                }, outputJson: {
+                    name: "outputJson",
+                    type: "Json",
+                    isOptional: true,
+                }, error: {
+                    name: "error",
+                    type: "String",
+                    isOptional: true,
+                }, startedAt: {
+                    name: "startedAt",
+                    type: "DateTime",
+                    attributes: [{ "name": "@default", "args": [{ "name": "value" }] }],
+                }, completedAt: {
+                    name: "completedAt",
+                    type: "DateTime",
+                    isOptional: true,
+                }, createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ "name": "@default", "args": [{ "name": "value" }] }],
+                },
+            }, uniqueConstraints: {
+                id: {
+                    name: "id",
+                    fields: ["id"]
+                },
+            },
+        },
+        composioConnection: {
+            name: 'ComposioConnection', fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    isId: true,
+                    attributes: [{ "name": "@default", "args": [{ "name": "value" }] }],
+                }, organization: {
+                    name: "organization",
+                    type: "Organization",
+                    isDataModel: true,
+                    backLink: 'composioConnections',
+                    isRelationOwner: true,
+                    foreignKeyMapping: { "id": "organizationId" },
+                }, organizationId: {
+                    name: "organizationId",
+                    type: "String",
+                    attributes: [{ "name": "@default", "args": [{ "name": "value" }] }],
+                    defaultValueProvider: $default$ComposioConnection$organizationId,
+                    isForeignKey: true,
+                    relationField: 'organization',
+                }, user: {
+                    name: "user",
+                    type: "User",
+                    isDataModel: true,
+                    backLink: 'composioConnections',
+                    isRelationOwner: true,
+                    foreignKeyMapping: { "id": "userId" },
+                }, userId: {
+                    name: "userId",
+                    type: "String",
+                    attributes: [{ "name": "@default", "args": [{ "name": "value" }] }],
+                    defaultValueProvider: $default$ComposioConnection$userId,
+                    isForeignKey: true,
+                    relationField: 'user',
+                }, appName: {
+                    name: "appName",
+                    type: "String",
+                }, composioEntityId: {
+                    name: "composioEntityId",
+                    type: "String",
+                }, status: {
+                    name: "status",
+                    type: "ConnectionStatus",
+                    attributes: [{ "name": "@default", "args": [{ "name": "value" }] }],
+                }, createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ "name": "@default", "args": [{ "name": "value" }] }],
+                }, updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    attributes: [{ "name": "@updatedAt", "args": [] }],
+                },
+            }, uniqueConstraints: {
+                id: {
+                    name: "id",
+                    fields: ["id"]
+                }, organizationId_userId_appName: {
+                    name: "organizationId_userId_appName",
+                    fields: ["organizationId", "userId", "appName"]
                 },
             },
         },
@@ -778,6 +1248,8 @@ const metadata = {
         column: ['Task'],
         tag: ['PostTag'],
         post: ['PostTag'],
+        workflow: ['WorkflowTrigger', 'WorkflowExecution'],
+        workflowExecution: ['WorkflowExecutionLog'],
 
     },
     authModel: 'Auth'
@@ -793,6 +1265,30 @@ function $default$Board$ownerId(user: any): unknown {
 }
 
 function $default$Post$authorId(user: any): unknown {
+    return user?.userId;
+}
+
+function $default$Workflow$organizationId(user: any): unknown {
+    return user?.organizationId;
+}
+
+function $default$Workflow$createdById(user: any): unknown {
+    return user?.userId;
+}
+
+function $default$WorkflowTrigger$organizationId(user: any): unknown {
+    return user?.organizationId;
+}
+
+function $default$WorkflowExecution$organizationId(user: any): unknown {
+    return user?.organizationId;
+}
+
+function $default$ComposioConnection$organizationId(user: any): unknown {
+    return user?.organizationId;
+}
+
+function $default$ComposioConnection$userId(user: any): unknown {
     return user?.userId;
 }
 export default metadata;
