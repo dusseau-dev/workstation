@@ -143,24 +143,29 @@ function useVariableAutocomplete(
   };
 }
 
-type KVPair = { key: string; value: string };
+type KVPair = { id: string; key: string; value: string };
+
+let kvCounter = 0;
+function newKVPair(key = "", value = ""): KVPair {
+  return { id: `kv-${++kvCounter}`, key, value };
+}
 
 function parseKeyValuePairs(value: unknown): KVPair[] {
-  if (!value) return [{ key: "", value: "" }];
+  if (!value) return [newKVPair()];
   if (typeof value === "string") {
     try {
       const obj = JSON.parse(value);
       if (typeof obj === "object" && obj !== null && !Array.isArray(obj)) {
         const entries = Object.entries(obj) as [string, string][];
         return entries.length > 0
-          ? entries.map(([k, v]) => ({ key: k, value: String(v) }))
-          : [{ key: "", value: "" }];
+          ? entries.map(([k, v]) => newKVPair(k, String(v)))
+          : [newKVPair()];
       }
     } catch {
       // not valid JSON
     }
   }
-  return [{ key: "", value: "" }];
+  return [newKVPair()];
 }
 
 function serializeKeyValuePairs(pairs: KVPair[]): string {
@@ -177,12 +182,14 @@ function ConfigField({
   onChange,
   upstreamNodes,
   nodeConfig,
+  nodeId,
 }: {
   field: ConfigFieldDef;
   value: unknown;
   onChange: (value: unknown) => void;
   upstreamNodes: ReturnType<typeof useAtomValue<typeof upstreamNodesAtom>>;
   nodeConfig?: Record<string, unknown>;
+  nodeId?: string;
 }) {
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
   const autocomplete = useVariableAutocomplete(upstreamNodes);
@@ -315,7 +322,7 @@ function ConfigField({
           <Label>{field.label}</Label>
           <div className="space-y-2">
             {pairs.map((pair, i) => (
-              <div key={i} className="flex gap-1.5">
+              <div key={pair.id} className="flex gap-1.5">
                 <Input
                   value={pair.key}
                   onChange={(e) => {
@@ -340,6 +347,7 @@ function ConfigField({
                   variant="ghost"
                   size="icon"
                   className="shrink-0 h-9 w-9"
+                  disabled={pairs.length <= 1}
                   onClick={() => {
                     const updated = pairs.filter((_, j) => j !== i);
                     onChange(serializeKeyValuePairs(updated));
@@ -354,7 +362,7 @@ function ConfigField({
               size="sm"
               className="w-full"
               onClick={() => {
-                onChange(serializeKeyValuePairs([...pairs, { key: "", value: "" }]));
+                onChange(serializeKeyValuePairs([...pairs, newKVPair()]));
               }}
             >
               + Add pair
@@ -399,6 +407,7 @@ function ConfigField({
         <div className="space-y-1.5">
           <Label>{field.label}</Label>
           <MinimalTiptapEditor
+            key={nodeId}
             value={strValue}
             onChange={(content) => onChange(content)}
             output="html"
@@ -407,6 +416,16 @@ function ConfigField({
             editorContentClassName="p-2 text-sm"
             immediatelyRender={false}
           />
+          {upstreamNodes.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              <span className="text-xs text-muted-foreground">Variables:</span>
+              {upstreamNodes.map((n) => (
+                <Badge key={n.id} variant="outline" className="text-[10px] font-mono px-1 py-0">
+                  {"{{"}steps.{n.data.label.replace(/\s+/g, "_")}.output{"}}"}
+                </Badge>
+              ))}
+            </div>
+          )}
         </div>
       );
     case "dynamic_select":

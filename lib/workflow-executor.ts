@@ -17,8 +17,6 @@ const SUBTYPE_TO_COMPOSIO: Record<string, { app: string; action: string }> = {
   send_email: { app: "gmail", action: "GMAIL_SEND_EMAIL" },
   send_slack: { app: "slack", action: "SLACK_SENDS_A_MESSAGE_TO_A_SLACK_CHANNEL" },
   http_request: { app: "http", action: "HTTP_REQUEST" },
-  create_card: { app: "trello", action: "TRELLO_CREATE_CARD" },
-  update_card: { app: "trello", action: "TRELLO_UPDATE_CARD" },
 };
 
 // Resolve template variables like {{steps.NodeName.output}} or {{steps.NodeName.output.field}}
@@ -99,6 +97,14 @@ export async function executeNode(
       return { success: false, error: "Missing composioApp or composioAction in config" };
     }
     return executeComposioAction(composioApp, composioAction, config, userId, organizationId);
+  }
+
+  // Local card operations — execute against the app's own database
+  if (subtype === "create_card") {
+    return executeCreateCard(config);
+  }
+  if (subtype === "update_card") {
+    return executeUpdateCard(config);
   }
 
   // Built-in subtypes that map to Composio
@@ -188,5 +194,77 @@ function getDelayMultiplier(unit: string): number {
     case "minutes": return 60_000;
     case "hours": return 3_600_000;
     default: return 1_000;
+  }
+}
+
+async function executeCreateCard(config: Record<string, unknown>): Promise<ExecuteNodeResult> {
+  const columnId = String(config.columnId ?? "");
+  const title = String(config.title ?? "");
+  if (!columnId || !title) {
+    return { success: false, error: "columnId and title are required to create a card" };
+  }
+
+  try {
+    // Determine order: place at end of column
+    const lastTask = await prisma.task.findFirst({
+      where: { columnId },
+      orderBy: { order: "desc" },
+      select: { order: true },
+    });
+    const order = (lastTask?.order ?? -1) + 1;
+
+    const priorityStr = String(config.priority ?? "MEDIUM").toUpperCase();
+    const validPriorities = ["LOW", "MEDIUM", "HIGH", "URGENT"] as const;
+    const priority = validPriorities.includes(priorityStr as typeof validPriorities[number])
+      ? (priorityStr as typeof validPriorities[number])
+      : "MEDIUM";
+
+    const task = await prisma.task.create({
+      data: {
+        title,
+        description: config.description ? String(config.description) : null,
+        columnId,
+        order,
+        priority,
+        assigneeId: config.assigneeId ? String(config.assigneeId) : null,
+      },
+    });
+    return { success: true, output: { cardId: task.id, title: task.title, columnId: task.columnId } };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Failed to create card" };
+  }
+}
+
+async function executeUpdateCard(config: Record<string, unknown>): Promise<ExecuteNodeResult> {
+  const cardId = String(config.cardId ?? "");
+  if (!cardId) {
+    return { success: false, error: "cardId is required to update a card" };
+  }
+
+  try {
+    const data: Record<string, unknown> = {};
+    if (config.title) data.title = String(config.title);
+    if (config.description) data.description = String(config.description);
+    if (config.columnId) data.columnId = String(config.columnId);
+    if (config.assigneeId) data.assigneeId = String(config.assigneeId);
+    if (config.priority) {
+      const priorityStr = String(config.priority).toUpperCase();
+      const validPriorities = ["LOW", "MEDIUM", "HIGH", "URGENT"] as const;
+      if (validPriorities.includes(priorityStr as typeof validPriorities[number])) {
+        data.priority = priorityStr;
+      }
+    }
+
+    if (Object.keys(data).length === 0) {
+      return { success: true, output: { cardId, message: "No fields to update" } };
+    }
+
+    const task = await prisma.task.update({
+      where: { id: cardId },
+      data,
+    });
+    return { success: true, output: { cardId: task.id, title: task.title, columnId: task.columnId } };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Failed to update card" };
   }
 }

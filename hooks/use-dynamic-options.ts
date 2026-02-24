@@ -14,14 +14,15 @@ export function useDynamicOptions(
     { enabled: dataSource === "boards" }
   );
 
-  // When dependsOnValue is undefined: no dependency, fetch all columns
+  // When dependsOnValue is undefined: no dependency, fetch all columns (include board name for context)
   // When dependsOnValue is "" (empty): parent not selected yet, skip query
   // When dependsOnValue is a real ID: fetch columns filtered by that board
   const columnsEnabled = dataSource === "columns" && dependsOnValue !== "";
+  const showBoardName = !dependsOnValue; // no board filter = show board name to disambiguate
   const columnsQuery = useFindManyColumn(
     {
       where: dependsOnValue ? { boardId: dependsOnValue } : undefined,
-      select: { id: true, title: true },
+      select: { id: true, title: true, ...(showBoardName ? { board: { select: { name: true } } } : {}) },
       orderBy: { order: "asc" },
     },
     { enabled: columnsEnabled }
@@ -42,7 +43,11 @@ export function useDynamicOptions(
   }
   if (dataSource === "columns") {
     return {
-      options: (columnsQuery.data ?? []).map((c) => ({ label: c.title, value: c.id })),
+      options: (columnsQuery.data ?? []).map((c) => {
+        const boardName = (c as { board?: { name: string } }).board?.name;
+        const label = boardName ? `${c.title} (${boardName})` : c.title;
+        return { label, value: c.id };
+      }),
       isLoading: columnsQuery.isLoading,
     };
   }
