@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, useMemo } from "react";
+import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { Trash2, Play, X } from "lucide-react";
 import {
@@ -32,6 +32,9 @@ import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { MinimalTiptapEditor } from "@/components/ui/minimal-tiptap";
+import SearchSelect from "@/components/search-select";
+import { useDynamicOptions } from "@/hooks/use-dynamic-options";
 
 // Variable autocomplete popover for text/textarea fields
 function VariableAutocomplete({
@@ -173,15 +176,17 @@ function ConfigField({
   value,
   onChange,
   upstreamNodes,
+  nodeConfig,
 }: {
   field: ConfigFieldDef;
   value: unknown;
   onChange: (value: unknown) => void;
   upstreamNodes: ReturnType<typeof useAtomValue<typeof upstreamNodesAtom>>;
+  nodeConfig?: Record<string, unknown>;
 }) {
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
   const autocomplete = useVariableAutocomplete(upstreamNodes);
-  const supportsVariables = field.type === "text" || field.type === "textarea";
+  const supportsVariables = field.type === "text" || field.type === "textarea" || field.type === "email";
   const strValue = (value as string) ?? "";
 
   const handleChange = (newVal: string) => {
@@ -358,9 +363,128 @@ function ConfigField({
         </div>
       );
     }
+    case "email": {
+      const hasVariable = strValue.includes("{{");
+      const isValidEmail = !strValue || hasVariable || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(strValue);
+      return (
+        <div className="space-y-1.5 relative">
+          <Label htmlFor={field.key}>
+            {field.label}
+            {field.required && <span className="text-destructive ml-0.5">*</span>}
+          </Label>
+          <Input
+            ref={inputRef as React.Ref<HTMLInputElement>}
+            id={field.key}
+            value={strValue}
+            onChange={(e) => handleChange(e.target.value)}
+            onBlur={() => autocomplete.dismissSuggestions()}
+            placeholder={field.placeholder}
+            className={!isValidEmail ? "border-destructive" : ""}
+          />
+          {!isValidEmail && (
+            <p className="text-xs text-destructive">Enter a valid email address</p>
+          )}
+          {autocomplete.showSuggestions && autocomplete.cursorInfo && (
+            <VariableAutocomplete
+              suggestions={autocomplete.filteredSuggestions}
+              position={autocomplete.cursorInfo.position}
+              onSelect={(v) => autocomplete.insertVariable(v, strValue, (nv) => onChange(nv))}
+            />
+          )}
+        </div>
+      );
+    }
+    case "richtext":
+      return (
+        <div className="space-y-1.5">
+          <Label>{field.label}</Label>
+          <MinimalTiptapEditor
+            value={strValue}
+            onChange={(content) => onChange(content)}
+            output="html"
+            placeholder={field.placeholder}
+            className="min-h-[120px] max-h-[200px]"
+            editorContentClassName="p-2 text-sm"
+            immediatelyRender={false}
+          />
+        </div>
+      );
+    case "dynamic_select":
+      return (
+        <DynamicSelectField
+          field={field}
+          value={value}
+          onChange={onChange}
+          nodeConfig={nodeConfig}
+        />
+      );
     default:
       return null;
   }
+}
+
+function DynamicSelectField({
+  field,
+  value,
+  onChange,
+  nodeConfig,
+}: {
+  field: ConfigFieldDef;
+  value: unknown;
+  onChange: (value: unknown) => void;
+  nodeConfig?: Record<string, unknown>;
+}) {
+  const dependsOnValue = field.dependsOn
+    ? (nodeConfig?.[field.dependsOn] as string | undefined)
+    : undefined;
+
+  const { options, isLoading } = useDynamicOptions(
+    field.dataSource,
+    field.dependsOn ? dependsOnValue : undefined,
+  );
+
+  // Clear value when the parent dependency changes
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+  const valueRef = useRef(value);
+  valueRef.current = value;
+  const prevDependsOnRef = useRef(dependsOnValue);
+  useEffect(() => {
+    if (field.dependsOn && prevDependsOnRef.current !== dependsOnValue) {
+      prevDependsOnRef.current = dependsOnValue;
+      if (valueRef.current) onChangeRef.current("");
+    }
+  }, [dependsOnValue, field.dependsOn]);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-1.5">
+        <Label>
+          {field.label}
+          {field.required && <span className="text-destructive ml-0.5">*</span>}
+        </Label>
+        <div className="h-9 flex items-center text-xs text-muted-foreground px-3 border rounded-md">
+          Loading...
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-1.5">
+      <Label>
+        {field.label}
+        {field.required && <span className="text-destructive ml-0.5">*</span>}
+      </Label>
+      <SearchSelect
+        options={options}
+        value={(value as string) ?? ""}
+        onChange={(v) => onChange(v)}
+        placeholder={field.placeholder ?? "Select..."}
+        emptyMessage="No options found"
+      />
+    </div>
+  );
 }
 
 export function NodeConfigPanel() {
@@ -372,6 +496,13 @@ export function NodeConfigPanel() {
   const setSelectedNodeId = useSetAtom(selectedNodeIdAtom);
   const [testOutput, setTestOutput] = useState<string | null>(null);
   const [isTesting, setIsTesting] = useState(false);
+
+  // Reset test output when switching nodes
+  const nodeId = selectedNode?.id;
+  useEffect(() => {
+    setTestOutput(null);
+    setIsTesting(false);
+  }, [nodeId]);
 
   const handleTestNode = useCallback(async () => {
     if (!selectedNode) return;
@@ -486,6 +617,7 @@ export function NodeConfigPanel() {
                   updateConfig({ nodeId: selectedNode.id, configKey: field.key, value })
                 }
                 upstreamNodes={upstreamNodes}
+                nodeConfig={nodeData.config}
               />
             ))}
           </div>

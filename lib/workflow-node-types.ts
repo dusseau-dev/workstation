@@ -15,10 +15,13 @@ export type NodeSubtype =
   | "if_else" | "delay" | "loop"
   | "composio_action";
 
+export type DataSourceType = "boards" | "columns" | "members";
+
 export type ConfigFieldDef = {
   key: string;
   label: string;
-  type: "text" | "textarea" | "number" | "select" | "switch" | "slider" | "keyvalue";
+  type: "text" | "textarea" | "number" | "select" | "switch" | "slider" | "keyvalue"
+    | "email" | "richtext" | "dynamic_select";
   placeholder?: string;
   options?: { label: string; value: string }[];
   defaultValue?: unknown;
@@ -26,6 +29,8 @@ export type ConfigFieldDef = {
   min?: number;
   max?: number;
   step?: number;
+  dataSource?: DataSourceType;
+  dependsOn?: string;
 };
 
 export type NodeTypeDefinition = {
@@ -77,8 +82,8 @@ export const NODE_TYPE_REGISTRY: Record<NodeSubtype, NodeTypeDefinition> = {
     icon: ArrowRightLeft,
     defaultConfig: { triggerType: "CARD_MOVED", fromColumn: "", toColumn: "" },
     configFields: [
-      { key: "fromColumn", label: "From Column", type: "text", placeholder: "Any column" },
-      { key: "toColumn", label: "To Column", type: "text", placeholder: "Any column" },
+      { key: "fromColumn", label: "From Column", type: "dynamic_select", dataSource: "columns", placeholder: "Any column" },
+      { key: "toColumn", label: "To Column", type: "dynamic_select", dataSource: "columns", placeholder: "Any column" },
     ],
   },
   card_updated: {
@@ -111,9 +116,9 @@ export const NODE_TYPE_REGISTRY: Record<NodeSubtype, NodeTypeDefinition> = {
     icon: Mail,
     defaultConfig: { to: "", subject: "", body: "" },
     configFields: [
-      { key: "to", label: "To", type: "text", placeholder: "recipient@example.com", required: true },
+      { key: "to", label: "To", type: "email", placeholder: "recipient@example.com", required: true },
       { key: "subject", label: "Subject", type: "text", placeholder: "Email subject", required: true },
-      { key: "body", label: "Body", type: "textarea", placeholder: "Email body..." },
+      { key: "body", label: "Body", type: "richtext", placeholder: "Email body..." },
     ],
   },
   send_slack: {
@@ -154,8 +159,8 @@ export const NODE_TYPE_REGISTRY: Record<NodeSubtype, NodeTypeDefinition> = {
     icon: CreditCard,
     defaultConfig: { boardId: "", columnId: "", title: "", description: "" },
     configFields: [
-      { key: "boardId", label: "Board ID", type: "text", placeholder: "Board ID" },
-      { key: "columnId", label: "Column ID", type: "text", placeholder: "Column ID" },
+      { key: "boardId", label: "Board", type: "dynamic_select", dataSource: "boards", placeholder: "Select a board", required: true },
+      { key: "columnId", label: "Column", type: "dynamic_select", dataSource: "columns", dependsOn: "boardId", placeholder: "Select a column", required: true },
       { key: "title", label: "Card Title", type: "text", required: true },
       { key: "description", label: "Description", type: "textarea" },
     ],
@@ -171,8 +176,8 @@ export const NODE_TYPE_REGISTRY: Record<NodeSubtype, NodeTypeDefinition> = {
       { key: "cardId", label: "Card ID", type: "text", placeholder: "{{steps.trigger.output.cardId}}" },
       { key: "title", label: "New Title", type: "text" },
       { key: "description", label: "New Description", type: "textarea" },
-      { key: "columnId", label: "Move to Column", type: "text", placeholder: "Column ID" },
-      { key: "assigneeId", label: "Set Assignee", type: "text", placeholder: "User ID" },
+      { key: "columnId", label: "Move to Column", type: "dynamic_select", dataSource: "columns", placeholder: "Select a column" },
+      { key: "assigneeId", label: "Set Assignee", type: "dynamic_select", dataSource: "members", placeholder: "Select a member" },
       { key: "priority", label: "Priority", type: "select", options: [
         { label: "None", value: "" }, { label: "Low", value: "low" },
         { label: "Medium", value: "medium" }, { label: "High", value: "high" },
