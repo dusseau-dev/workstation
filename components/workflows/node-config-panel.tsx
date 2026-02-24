@@ -145,35 +145,122 @@ function useVariableAutocomplete(
 
 type KVPair = { id: string; key: string; value: string };
 
-let kvCounter = 0;
-function newKVPair(key = "", value = ""): KVPair {
-  return { id: `kv-${++kvCounter}`, key, value };
-}
-
-function parseKeyValuePairs(value: unknown): KVPair[] {
-  if (!value) return [newKVPair()];
-  if (typeof value === "string") {
-    try {
-      const obj = JSON.parse(value);
-      if (typeof obj === "object" && obj !== null && !Array.isArray(obj)) {
-        const entries = Object.entries(obj) as [string, string][];
-        return entries.length > 0
-          ? entries.map(([k, v]) => newKVPair(k, String(v)))
-          : [newKVPair()];
-      }
-    } catch {
-      // not valid JSON
-    }
-  }
-  return [newKVPair()];
-}
-
 function serializeKeyValuePairs(pairs: KVPair[]): string {
   const obj: Record<string, string> = {};
   for (const p of pairs) {
     if (p.key.trim()) obj[p.key.trim()] = p.value;
   }
   return JSON.stringify(obj);
+}
+
+function KeyValueField({
+  field,
+  value,
+  onChange,
+}: {
+  field: ConfigFieldDef;
+  value: unknown;
+  onChange: (value: unknown) => void;
+}) {
+  const counterRef = useRef(0);
+  const mkPair = useCallback((key = "", val = ""): KVPair => {
+    return { id: `kv-${++counterRef.current}`, key, value: val };
+  }, []);
+
+  const parsePairs = useCallback(
+    (v: unknown): KVPair[] => {
+      if (!v) return [mkPair()];
+      if (typeof v === "string") {
+        try {
+          const obj = JSON.parse(v);
+          if (typeof obj === "object" && obj !== null && !Array.isArray(obj)) {
+            const entries = Object.entries(obj) as [string, string][];
+            return entries.length > 0
+              ? entries.map(([k, val]) => mkPair(k, String(val)))
+              : [mkPair()];
+          }
+        } catch {
+          // not valid JSON
+        }
+      }
+      return [mkPair()];
+    },
+    [mkPair]
+  );
+
+  const [pairs, setPairs] = useState<KVPair[]>(() => parsePairs(value));
+  const isOwnEdit = useRef(false);
+
+  // Re-parse only when value changes from an external source
+  useEffect(() => {
+    if (isOwnEdit.current) {
+      isOwnEdit.current = false;
+      return;
+    }
+    setPairs(parsePairs(value));
+  }, [value, parsePairs]);
+
+  const emitChange = useCallback(
+    (updated: KVPair[]) => {
+      setPairs(updated);
+      isOwnEdit.current = true;
+      onChange(serializeKeyValuePairs(updated));
+    },
+    [onChange]
+  );
+
+  return (
+    <div className="space-y-1.5">
+      <Label>{field.label}</Label>
+      <div className="space-y-2">
+        {pairs.map((pair, i) => (
+          <div key={pair.id} className="flex gap-1.5">
+            <Input
+              value={pair.key}
+              onChange={(e) => {
+                const updated = [...pairs];
+                updated[i] = { ...pair, key: e.target.value };
+                emitChange(updated);
+              }}
+              placeholder="Key"
+              className="flex-1"
+            />
+            <Input
+              value={pair.value}
+              onChange={(e) => {
+                const updated = [...pairs];
+                updated[i] = { ...pair, value: e.target.value };
+                emitChange(updated);
+              }}
+              placeholder={field.placeholder ?? "Value"}
+              className="flex-1"
+            />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="shrink-0 h-9 w-9"
+              disabled={pairs.length <= 1}
+              onClick={() => {
+                emitChange(pairs.filter((_, j) => j !== i));
+              }}
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          </div>
+        ))}
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full"
+          onClick={() => {
+            emitChange([...pairs, mkPair()]);
+          }}
+        >
+          + Add pair
+        </Button>
+      </div>
+    </div>
+  );
 }
 
 function ConfigField({
@@ -315,62 +402,8 @@ function ConfigField({
         </div>
       );
     }
-    case "keyvalue": {
-      const pairs = parseKeyValuePairs(value);
-      return (
-        <div className="space-y-1.5">
-          <Label>{field.label}</Label>
-          <div className="space-y-2">
-            {pairs.map((pair, i) => (
-              <div key={pair.id} className="flex gap-1.5">
-                <Input
-                  value={pair.key}
-                  onChange={(e) => {
-                    const updated = [...pairs];
-                    updated[i] = { ...pair, key: e.target.value };
-                    onChange(serializeKeyValuePairs(updated));
-                  }}
-                  placeholder="Key"
-                  className="flex-1"
-                />
-                <Input
-                  value={pair.value}
-                  onChange={(e) => {
-                    const updated = [...pairs];
-                    updated[i] = { ...pair, value: e.target.value };
-                    onChange(serializeKeyValuePairs(updated));
-                  }}
-                  placeholder={field.placeholder ?? "Value"}
-                  className="flex-1"
-                />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="shrink-0 h-9 w-9"
-                  disabled={pairs.length <= 1}
-                  onClick={() => {
-                    const updated = pairs.filter((_, j) => j !== i);
-                    onChange(serializeKeyValuePairs(updated));
-                  }}
-                >
-                  <X className="h-3 w-3" />
-                </Button>
-              </div>
-            ))}
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full"
-              onClick={() => {
-                onChange(serializeKeyValuePairs([...pairs, newKVPair()]));
-              }}
-            >
-              + Add pair
-            </Button>
-          </div>
-        </div>
-      );
-    }
+    case "keyvalue":
+      return <KeyValueField field={field} value={value} onChange={onChange} />;
     case "email": {
       const hasVariable = strValue.includes("{{");
       const isValidEmail = !strValue || hasVariable || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(strValue);
@@ -637,6 +670,7 @@ export function NodeConfigPanel() {
                 }
                 upstreamNodes={upstreamNodes}
                 nodeConfig={nodeData.config}
+                nodeId={selectedNode.id}
               />
             ))}
           </div>

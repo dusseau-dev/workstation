@@ -109,6 +109,33 @@ export function BoardContent({ slug, initialData }: Props) {
     setKanbanState(serverKanbanData);
   }
 
+  // Fire trigger for card move events (fire-and-forget)
+  const fireTrigger = useCallback(
+    (taskId: string, task: TaskWithAssignee, fromColumnId: string, toColumnId: string) => {
+      void fetch("/api/triggers/fire", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          boardId: board?.id,
+          eventType: "CARD_MOVED",
+          cardId: taskId,
+          cardData: {
+            title: task.title,
+            description: task.description,
+            priority: task.priority,
+            assigneeId: task.assigneeId,
+            columnId: toColumnId,
+          },
+          fromColumnId,
+          toColumnId,
+        }),
+      }).catch(() => {
+        // Fire-and-forget — don't block the UI on trigger failures
+      });
+    },
+    [board?.id]
+  );
+
   // Handle kanban updates
   const handleKanbanChange = useCallback(
     async (newData: Record<string, (Task & { assignee: User | null })[]>) => {
@@ -181,7 +208,7 @@ export function BoardContent({ slug, initialData }: Props) {
         }
       });
 
-      // Process task changes
+      // Process task changes — detect column moves for triggers
       Object.entries(newData).forEach(([columnId, tasks]) => {
         tasks.forEach((task, index) => {
           const currentTask = taskMap.get(task.id);
@@ -196,6 +223,11 @@ export function BoardContent({ slug, initialData }: Props) {
                   data: { columnId, order: index },
                 })
               );
+            }
+
+            // Fire CARD_MOVED trigger when column changes
+            if (needsColumnUpdate) {
+              fireTrigger(task.id, task, currentTask.columnId, columnId);
             }
           }
         });
@@ -215,7 +247,7 @@ export function BoardContent({ slug, initialData }: Props) {
         await queryClient.invalidateQueries({ queryKey });
       }
     },
-    [board, queryClient, queryKey, updateColumn, updateTask]
+    [board, queryClient, queryKey, updateColumn, updateTask, fireTrigger]
   );
 
 

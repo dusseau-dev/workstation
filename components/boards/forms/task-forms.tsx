@@ -125,7 +125,7 @@ const AddTaskFormComponent = ({
       existingTasks && existingTasks.length > 0
         ? Math.max(...existingTasks.map((task) => task.order)) + 1
         : 0;
-    await createTask({
+    const created = await createTask({
       data: {
         title: data.title!,
         description: data.description,
@@ -136,6 +136,27 @@ const AddTaskFormComponent = ({
       },
     });
     toast.success("Task created successfully");
+
+    // Fire CARD_CREATED trigger (fire-and-forget)
+    if (created?.id) {
+      void fetch("/api/triggers/fire", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          boardId,
+          eventType: "CARD_CREATED",
+          cardId: created.id,
+          cardData: {
+            title: data.title,
+            description: data.description,
+            priority: data.priority,
+            assigneeId: data.assigneeId || null,
+            columnId,
+          },
+        }),
+      }).catch(() => {});
+    }
+
     onSuccess();
   };
 
@@ -244,6 +265,14 @@ const EditTaskFormComponent = ({
   } = useUpdateTask({ optimisticUpdate: false });
 
   const onSubmit = async (data: z.infer<typeof schema>) => {
+    // Detect which fields changed for trigger matching
+    const changedFields: string[] = [];
+    if (data.title !== task?.title) changedFields.push("title");
+    if (data.description !== task?.description) changedFields.push("description");
+    if (data.priority !== task?.priority) changedFields.push("priority");
+    if (data.columnId !== task?.columnId) changedFields.push("columnId");
+    if ((data.assigneeId || null) !== (task?.assigneeId || null)) changedFields.push("assigneeId");
+
     await updateTask({
       where: { id: taskId },
       data: {
@@ -255,6 +284,28 @@ const EditTaskFormComponent = ({
       },
     });
     toast.success("Task updated successfully");
+
+    // Fire CARD_UPDATED trigger if fields actually changed (fire-and-forget)
+    if (changedFields.length > 0) {
+      void fetch("/api/triggers/fire", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          boardId,
+          eventType: "CARD_UPDATED",
+          cardId: taskId,
+          cardData: {
+            title: data.title,
+            description: data.description,
+            priority: data.priority,
+            assigneeId: data.assigneeId || null,
+            columnId: data.columnId,
+          },
+          changedFields,
+        }),
+      }).catch(() => {});
+    }
+
     onSuccess();
   };
 
