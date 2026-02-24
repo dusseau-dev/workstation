@@ -59,6 +59,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { triggerWorkflow } from "@/lib/actions/trigger-workflow";
 
 export type ColumnWithTasks = Column & {
   tasks: (Task & {
@@ -139,21 +140,17 @@ const AddTaskFormComponent = ({
 
     // Fire CARD_CREATED trigger (fire-and-forget)
     if (created?.id) {
-      void fetch("/api/triggers/fire", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          boardId,
-          eventType: "CARD_CREATED",
-          cardId: created.id,
-          cardData: {
-            title: data.title,
-            description: data.description,
-            priority: data.priority,
-            assigneeId: data.assigneeId || null,
-            columnId,
-          },
-        }),
+      void triggerWorkflow({
+        boardId,
+        eventType: "CARD_CREATED",
+        cardId: created.id,
+        cardData: {
+          title: data.title,
+          description: data.description,
+          priority: data.priority,
+          assigneeId: data.assigneeId || null,
+          columnId,
+        },
       }).catch((err) => { console.warn("Trigger fire failed:", err); });
     }
 
@@ -296,33 +293,25 @@ const EditTaskFormComponent = ({
     // Fire CARD_MOVED trigger if column changed (fire-and-forget)
     const columnChanged = changedFields.includes("columnId");
     if (columnChanged && task?.columnId) {
-      void fetch("/api/triggers/fire", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          boardId,
-          eventType: "CARD_MOVED",
-          cardId: taskId,
-          cardData,
-          fromColumnId: task.columnId,
-          toColumnId: data.columnId,
-        }),
+      void triggerWorkflow({
+        boardId,
+        eventType: "CARD_MOVED",
+        cardId: taskId,
+        cardData,
+        fromColumnId: task.columnId,
+        toColumnId: data.columnId,
       }).catch((err) => { console.warn("Trigger fire failed:", err); });
     }
 
     // Fire CARD_UPDATED trigger for non-column field changes (fire-and-forget)
     const nonColumnChanges = changedFields.filter((f) => f !== "columnId");
     if (nonColumnChanges.length > 0) {
-      void fetch("/api/triggers/fire", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          boardId,
-          eventType: "CARD_UPDATED",
-          cardId: taskId,
-          cardData,
-          changedFields: nonColumnChanges,
-        }),
+      void triggerWorkflow({
+        boardId,
+        eventType: "CARD_UPDATED",
+        cardId: taskId,
+        cardData,
+        changedFields: nonColumnChanges,
       }).catch((err) => { console.warn("Trigger fire failed:", err); });
     }
 

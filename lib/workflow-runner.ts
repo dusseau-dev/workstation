@@ -96,6 +96,8 @@ type RunWorkflowResult = {
 export async function runWorkflow(
   params: RunWorkflowParams
 ): Promise<RunWorkflowResult> {
+  "use workflow";
+
   const {
     workflowId,
     organizationId,
@@ -223,13 +225,17 @@ export async function runWorkflow(
     });
 
     let result: ExecuteNodeResult;
-    try {
-      result = await executeNode(
+    async function runStep() {
+      "use step";
+      return await executeNode(
         node.data,
         userId,
         organizationId,
         stepOutputs
       );
+    }
+    try {
+      result = await runStep();
     } catch (err) {
       result = {
         success: false,

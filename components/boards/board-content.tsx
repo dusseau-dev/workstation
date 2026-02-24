@@ -22,6 +22,7 @@ import { FIND_UNIQUE_BOARD } from "@/lib/constants";
 import { KanbanContent, KanbanOverlay } from "@/components/boards/kanban-content";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { BoardAutomations } from "@/components/boards/board-automations";
+import { triggerWorkflow } from "@/lib/actions/trigger-workflow";
 
 type TaskWithAssignee = Task & { assignee: User | null };
 
@@ -112,23 +113,19 @@ export function BoardContent({ slug, initialData }: Props) {
   const fireTrigger = useCallback(
     (taskId: string, task: TaskWithAssignee, fromColumnId: string, toColumnId: string) => {
       if (!board?.id) return;
-      void fetch("/api/triggers/fire", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          boardId: board?.id,
-          eventType: "CARD_MOVED",
-          cardId: taskId,
-          cardData: {
-            title: task.title,
-            description: task.description,
-            priority: task.priority,
-            assigneeId: task.assigneeId,
-            columnId: toColumnId,
-          },
-          fromColumnId,
-          toColumnId,
-        }),
+      void triggerWorkflow({
+        boardId: board.id,
+        eventType: "CARD_MOVED",
+        cardId: taskId,
+        cardData: {
+          title: task.title,
+          description: task.description,
+          priority: task.priority,
+          assigneeId: task.assigneeId,
+          columnId: toColumnId,
+        },
+        fromColumnId,
+        toColumnId,
       }).catch((err) => {
         console.warn("Trigger fire failed:", err);
       });
