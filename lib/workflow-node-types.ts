@@ -80,10 +80,10 @@ export const NODE_TYPE_REGISTRY: Record<NodeSubtype, NodeTypeDefinition> = {
     label: "Card Moved",
     description: "When a card changes columns",
     icon: ArrowRightLeft,
-    defaultConfig: { triggerType: "CARD_MOVED", fromColumn: "", toColumn: "" },
+    defaultConfig: { triggerType: "CARD_MOVED", fromColumnId: "", toColumnId: "" },
     configFields: [
-      { key: "fromColumn", label: "From Column", type: "dynamic_select", dataSource: "columns", placeholder: "Any column" },
-      { key: "toColumn", label: "To Column", type: "dynamic_select", dataSource: "columns", placeholder: "Any column" },
+      { key: "fromColumnId", label: "From Column", type: "dynamic_select", dataSource: "columns", placeholder: "Any column" },
+      { key: "toColumnId", label: "To Column", type: "dynamic_select", dataSource: "columns", placeholder: "Any column" },
     ],
   },
   card_updated: {

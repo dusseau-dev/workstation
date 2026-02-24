@@ -85,7 +85,6 @@ export function BoardContent({ slug, initialData }: Props) {
       isInitialRender.current = false;
       return;
     }
-    console.log("refetching board");
     void refetch();
   }, [slug, refetch]);
 
@@ -130,8 +129,8 @@ export function BoardContent({ slug, initialData }: Props) {
           fromColumnId,
           toColumnId,
         }),
-      }).catch(() => {
-        // Fire-and-forget — don't block the UI on trigger failures
+      }).catch((err) => {
+        console.warn("Trigger fire failed:", err);
       });
     },
     [board?.id]

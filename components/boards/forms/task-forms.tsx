@@ -154,7 +154,7 @@ const AddTaskFormComponent = ({
             columnId,
           },
         }),
-      }).catch(() => {});
+      }).catch((err) => { console.warn("Trigger fire failed:", err); });
     }
 
     onSuccess();
@@ -285,8 +285,34 @@ const EditTaskFormComponent = ({
     });
     toast.success("Task updated successfully");
 
-    // Fire CARD_UPDATED trigger if fields actually changed (fire-and-forget)
-    if (changedFields.length > 0) {
+    const cardData = {
+      title: data.title,
+      description: data.description,
+      priority: data.priority,
+      assigneeId: data.assigneeId || null,
+      columnId: data.columnId,
+    };
+
+    // Fire CARD_MOVED trigger if column changed (fire-and-forget)
+    const columnChanged = changedFields.includes("columnId");
+    if (columnChanged && task?.columnId) {
+      void fetch("/api/triggers/fire", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          boardId,
+          eventType: "CARD_MOVED",
+          cardId: taskId,
+          cardData,
+          fromColumnId: task.columnId,
+          toColumnId: data.columnId,
+        }),
+      }).catch((err) => { console.warn("Trigger fire failed:", err); });
+    }
+
+    // Fire CARD_UPDATED trigger for non-column field changes (fire-and-forget)
+    const nonColumnChanges = changedFields.filter((f) => f !== "columnId");
+    if (nonColumnChanges.length > 0) {
       void fetch("/api/triggers/fire", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -294,16 +320,10 @@ const EditTaskFormComponent = ({
           boardId,
           eventType: "CARD_UPDATED",
           cardId: taskId,
-          cardData: {
-            title: data.title,
-            description: data.description,
-            priority: data.priority,
-            assigneeId: data.assigneeId || null,
-            columnId: data.columnId,
-          },
-          changedFields,
+          cardData,
+          changedFields: nonColumnChanges,
         }),
-      }).catch(() => {});
+      }).catch((err) => { console.warn("Trigger fire failed:", err); });
     }
 
     onSuccess();

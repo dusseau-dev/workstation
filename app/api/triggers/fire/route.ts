@@ -48,6 +48,14 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const VALID_EVENT_TYPES = ["CARD_CREATED", "CARD_MOVED", "CARD_UPDATED"] as const;
+  if (!VALID_EVENT_TYPES.includes(eventType as (typeof VALID_EVENT_TYPES)[number])) {
+    return NextResponse.json(
+      { error: `Invalid eventType: ${eventType}` },
+      { status: 400 }
+    );
+  }
+
   // Find enabled triggers for this board + event type
   const triggers = await prisma.workflowTrigger.findMany({
     where: {
@@ -67,7 +75,7 @@ export async function POST(request: NextRequest) {
     const workflow = trigger.workflow;
 
     // Skip archived workflows
-    if (workflow.status === "ARCHIVED") return false;
+    if (workflow.status !== "ACTIVE") return false;
 
     switch (eventType) {
       case "CARD_MOVED": {
@@ -125,7 +133,7 @@ export async function POST(request: NextRequest) {
     workflowId: matchingTriggers[i].workflowId,
     ...(r.status === "fulfilled"
       ? { executionId: r.value.executionId, status: r.value.status }
-      : { error: "Failed to execute" }),
+      : { error: r.reason instanceof Error ? r.reason.message : String(r.reason) }),
   }));
 
   return NextResponse.json({ fired });
