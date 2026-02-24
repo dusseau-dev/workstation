@@ -101,10 +101,10 @@ export async function executeNode(
 
   // Local card operations — execute against the app's own database
   if (subtype === "create_card") {
-    return executeCreateCard(config);
+    return executeCreateCard(config, organizationId);
   }
   if (subtype === "update_card") {
-    return executeUpdateCard(config);
+    return executeUpdateCard(config, organizationId);
   }
 
   // Built-in subtypes that map to Composio
@@ -197,15 +197,30 @@ function getDelayMultiplier(unit: string): number {
   }
 }
 
-async function executeCreateCard(config: Record<string, unknown>): Promise<ExecuteNodeResult> {
+/** Verify a column belongs to an org (via column → board → organizationId) */
+async function verifyColumnOrg(columnId: string, organizationId: string): Promise<boolean> {
+  const column = await prisma.column.findFirst({
+    where: { id: columnId, board: { organizationId } },
+    select: { id: true },
+  });
+  return !!column;
+}
+
+async function executeCreateCard(
+  config: Record<string, unknown>,
+  organizationId: string
+): Promise<ExecuteNodeResult> {
   const columnId = String(config.columnId ?? "");
   const title = String(config.title ?? "");
   if (!columnId || !title) {
     return { success: false, error: "columnId and title are required to create a card" };
   }
 
+  if (!(await verifyColumnOrg(columnId, organizationId))) {
+    return { success: false, error: "Column not found or does not belong to this organization" };
+  }
+
   try {
-    // Determine order: place at end of column
     const lastTask = await prisma.task.findFirst({
       where: { columnId },
       orderBy: { order: "desc" },
@@ -235,17 +250,35 @@ async function executeCreateCard(config: Record<string, unknown>): Promise<Execu
   }
 }
 
-async function executeUpdateCard(config: Record<string, unknown>): Promise<ExecuteNodeResult> {
+async function executeUpdateCard(
+  config: Record<string, unknown>,
+  organizationId: string
+): Promise<ExecuteNodeResult> {
   const cardId = String(config.cardId ?? "");
   if (!cardId) {
     return { success: false, error: "cardId is required to update a card" };
+  }
+
+  // Verify card belongs to org via task → column → board → organizationId
+  const existingTask = await prisma.task.findFirst({
+    where: { id: cardId, column: { board: { organizationId } } },
+    select: { id: true },
+  });
+  if (!existingTask) {
+    return { success: false, error: "Card not found or does not belong to this organization" };
   }
 
   try {
     const data: Record<string, unknown> = {};
     if (config.title) data.title = String(config.title);
     if (config.description) data.description = String(config.description);
-    if (config.columnId) data.columnId = String(config.columnId);
+    if (config.columnId) {
+      const targetColumnId = String(config.columnId);
+      if (!(await verifyColumnOrg(targetColumnId, organizationId))) {
+        return { success: false, error: "Target column does not belong to this organization" };
+      }
+      data.columnId = targetColumnId;
+    }
     if (config.assigneeId) data.assigneeId = String(config.assigneeId);
     if (config.priority) {
       const priorityStr = String(config.priority).toUpperCase();

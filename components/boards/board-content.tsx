@@ -112,6 +112,7 @@ export function BoardContent({ slug, initialData }: Props) {
   // Fire trigger for card move events (fire-and-forget)
   const fireTrigger = useCallback(
     (taskId: string, task: TaskWithAssignee, fromColumnId: string, toColumnId: string) => {
+      if (!board?.id) return;
       void fetch("/api/triggers/fire", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -209,6 +210,7 @@ export function BoardContent({ slug, initialData }: Props) {
       });
 
       // Process task changes — detect column moves for triggers
+      const movedTasks: Array<{ taskId: string; task: TaskWithAssignee; fromColumnId: string; toColumnId: string }> = [];
       Object.entries(newData).forEach(([columnId, tasks]) => {
         tasks.forEach((task, index) => {
           const currentTask = taskMap.get(task.id);
@@ -225,9 +227,8 @@ export function BoardContent({ slug, initialData }: Props) {
               );
             }
 
-            // Fire CARD_MOVED trigger when column changes
             if (needsColumnUpdate) {
-              fireTrigger(task.id, task, currentTask.columnId, columnId);
+              movedTasks.push({ taskId: task.id, task, fromColumnId: currentTask.columnId, toColumnId: columnId });
             }
           }
         });
@@ -236,6 +237,10 @@ export function BoardContent({ slug, initialData }: Props) {
       // Execute mutations in parallel to avoid race conditions and improve performance
       try {
         await Promise.all(mutations);
+        // Fire CARD_MOVED triggers after DB writes succeed
+        movedTasks.forEach(({ taskId, task, fromColumnId, toColumnId }) => {
+          fireTrigger(taskId, task, fromColumnId, toColumnId);
+        });
       } catch (error) {
         console.error("Error updating kanban data:", error);
         // On failure, revert to the previous state
