@@ -40,7 +40,16 @@ type Props = {
 export function BoardContent({ slug, initialData }: Props) {
   const [kanbanState, setKanbanState] = useState<
     Record<string, (Task & { assignee: User | null })[]>
-  >({});
+  >(() => {
+    if (!initialData?.columns) return {};
+    return initialData.columns.reduce(
+      (acc, column) => {
+        acc[column.id] = column.tasks || [];
+        return acc;
+      },
+      {} as Record<string, (Task & { assignee: User | null })[]>
+    );
+  });
 
   const { modalState, openAddColumnModal, openEditBoardModal, openDeleteBoardModal } = useModalQuery();
 
