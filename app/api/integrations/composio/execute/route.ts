@@ -24,6 +24,7 @@ export async function POST(request: NextRequest) {
     const execResult = await composio.tools.execute(toolName, {
       userId: result.session.userId,
       arguments: args ?? {},
+      dangerouslySkipVersionCheck: true,
     });
     return NextResponse.json(execResult);
   } catch (err) {

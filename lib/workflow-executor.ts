@@ -165,6 +165,7 @@ async function executeComposioAction(
     const result = await composio.tools.execute(actionName, {
       userId,
       arguments: actionParams,
+      dangerouslySkipVersionCheck: true,
     });
     return { success: true, output: result };
   } catch (err) {

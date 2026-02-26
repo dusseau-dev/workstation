@@ -7,7 +7,7 @@ export function WorkflowCanvasProvider({ children }: { children?: React.ReactNod
   return (
     <ReactFlowProvider>
       <div className="flex flex-1 overflow-hidden">
-        <div className="flex-1">
+        <div className="flex-1 h-full">
           <WorkflowCanvas />
         </div>
         {children}

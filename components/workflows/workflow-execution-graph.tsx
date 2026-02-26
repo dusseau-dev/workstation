@@ -119,7 +119,7 @@ export function WorkflowExecutionGraph({ nodes, edges, nodeStates }: Props) {
       style: {
         ...edge.style,
         strokeWidth: 2,
-        stroke: "hsl(var(--muted-foreground))",
+        stroke: "var(--muted-foreground)",
         opacity: 0.45,
       },
     }));

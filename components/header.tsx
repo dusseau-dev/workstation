@@ -132,6 +132,14 @@ function MobileMenu() {
                     Workflows
                   </Link>
                 )}
+                {user && (
+                  <Link
+                    href="/settings"
+                    className="text-sm font-medium hover:underline py-2 px-3 hover:bg-secondary rounded-md transition-colors"
+                  >
+                    Settings
+                  </Link>
+                )}
                 <Link
                   href="/posts"
                   className="text-sm font-medium hover:underline py-2 px-3 hover:bg-secondary rounded-md transition-colors"
@@ -211,6 +219,11 @@ function DesktopMenu() {
         {user && (
           <Link href="/workflows" className="text-sm font-medium hover:underline">
             Workflows
+          </Link>
+        )}
+        {user && (
+          <Link href="/settings" className="text-sm font-medium hover:underline">
+            Settings
           </Link>
         )}
         <Link href="/posts" className="text-sm font-medium hover:underline">

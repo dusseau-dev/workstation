@@ -12,49 +12,12 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-
-type ComposioApp = {
-  name: string;
-  slug: string;
-  logo?: string;
-  categories?: string[];
-};
-
-type ComposioTool = {
-  name?: string;
-  slug?: string;
-  description?: string;
-  // OpenAI-wrapped tools have { function: { name, description } }
-  function?: { name: string; description: string };
-};
-
-type ConnectionInfo = {
-  toolkit?: { slug: string };
-  status?: string;
-};
-
-// Group apps into user-friendly categories
-const CATEGORY_MAP: Record<string, string> = {
-  "developer-tools": "Dev Tools",
-  "communication": "Communication",
-  "crm": "CRM",
-  "productivity": "Productivity",
-  "project-management": "Project Management",
-  "marketing": "Marketing",
-  "sales": "Sales",
-  "finance": "Finance",
-  "hr": "HR",
-  "support": "Support",
-  "storage": "Storage",
-  "social-media": "Social Media",
-};
-
-function getCategory(app: ComposioApp): string {
-  if (app.categories && app.categories.length > 0) {
-    return CATEGORY_MAP[app.categories[0]] ?? app.categories[0];
-  }
-  return "Other";
-}
+import {
+  type ComposioApp,
+  type ComposioTool,
+  type ConnectionInfo,
+  getCategory,
+} from "@/lib/composio-types";
 
 function getToolName(tool: ComposioTool): string {
   return tool.function?.name ?? tool.slug ?? tool.name ?? "Unknown";

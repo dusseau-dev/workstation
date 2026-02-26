@@ -28,7 +28,7 @@ export function AnimatedEdge({
       style={{
         ...style,
         strokeWidth: 2,
-        stroke: "hsl(var(--muted-foreground))",
+        stroke: "var(--muted-foreground)",
         strokeDasharray: "5 5",
         animation: "dash 1s linear infinite",
       }}

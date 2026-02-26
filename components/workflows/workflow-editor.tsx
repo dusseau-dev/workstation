@@ -81,15 +81,18 @@ export function WorkflowEditor({ workflowId, initialData }: Props) {
   const [showHistory, setShowHistory] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
   const [historyKey, setHistoryKey] = useState(0);
+  const loadedWorkflowIdRef = useRef<string | null>(null);
 
   // Sync name when source changes
   useEffect(() => {
     if (source?.name) setNameValue(source.name);
   }, [source?.name]);
 
-  // Load workflow data into Jotai store
+  // Load workflow data into Jotai store (only on initial load or workflow switch)
   useEffect(() => {
     if (!source) return;
+    if (loadedWorkflowIdRef.current === source.id) return;
+    loadedWorkflowIdRef.current = source.id;
     setCurrentWorkflowId(source.id);
     setNodes((source.nodesJson as WorkflowNode[]) ?? []);
     setEdges((source.edgesJson as WorkflowEdge[]) ?? []);

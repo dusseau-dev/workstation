@@ -31,13 +31,21 @@ export async function POST(request: NextRequest) {
     if (!resolvedAuthConfigId && appName) {
       const configs = await composio.authConfigs.list({ toolkit: appName });
       const first = configs.items[0];
-      if (!first) {
-        return NextResponse.json(
-          { error: `No auth config found for app: ${appName}` },
-          { status: 400 }
-        );
+
+      if (first) {
+        resolvedAuthConfigId = first.id;
+      } else {
+        // Auto-create a managed auth config if none exists
+        try {
+          const created = await composio.authConfigs.create(appName);
+          resolvedAuthConfigId = created.id;
+        } catch {
+          return NextResponse.json(
+            { error: `No auth config found for app: ${appName}` },
+            { status: 400 }
+          );
+        }
       }
-      resolvedAuthConfigId = first.id;
     }
 
     const connectionRequest = await composio.connectedAccounts.initiate(
