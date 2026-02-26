@@ -28,9 +28,13 @@ import { useMemo, memo, useState } from "react";
 import AutoForm, { AutoFormSubmit } from "@/components/ui/auto-form";
 import { useActiveOrganization, useSession } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
-import { useCreateTask, useUpdateTask, useDeleteTask } from "@/hooks/model/task";
+import {
+  useCreateTask,
+  useDeleteTask,
+  useFindUniqueBoard,
+  useUpdateTask,
+} from "@/hooks/model";
 import { FIND_UNIQUE_BOARD } from "@/lib/constants";
-import { useFindUniqueBoard } from "@/hooks/model/board";
 import { toast } from "sonner";
 import {
   AlertDialog,
