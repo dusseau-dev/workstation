@@ -6,6 +6,8 @@ import { runWorkflow } from "@/lib/workflow-runner";
 type Params = { params: Promise<{ id: string }> };
 type RunBody = {
   input?: Record<string, unknown>;
+  boardId?: string;
+  cardId?: string;
   retryExecutionId?: string;
   retryFromNodeId?: string;
 };
@@ -31,8 +33,10 @@ export async function POST(request: Request, { params }: Params) {
   }
 
   let inputJson = toObject(body.input);
-  let boardId: string | undefined;
-  let cardId: string | undefined;
+  let boardId: string | undefined =
+    typeof body.boardId === "string" ? body.boardId : undefined;
+  let cardId: string | undefined =
+    typeof body.cardId === "string" ? body.cardId : undefined;
   let triggerId: string | undefined;
   let prefilledStepOutputs: Record<string, unknown> | undefined;
 

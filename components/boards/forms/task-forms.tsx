@@ -64,6 +64,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { triggerWorkflow } from "@/lib/actions/trigger-workflow";
+import { CardWorkflowsSection } from "@/components/boards/card-workflows-section";
 
 export type ColumnWithTasks = Column & {
   tasks: (Task & {
@@ -323,34 +324,47 @@ const EditTaskFormComponent = ({
   };
 
   return (
-    <AutoForm
-      className="space-y-2 first:*:grid first:*:grid-cols-2 first:*:gap-x-4"
-      formSchema={schema}
-      fieldConfig={config}
-      values={initialData}
-      onSubmit={onSubmit}
-    >
-      {updateTaskError && (
-        <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
-          {updateTaskError?.message ||
-            `Failed to update task. Please try again.`}
-        </div>
-      )}
+    <>
+      <AutoForm
+        className="space-y-2 first:*:grid first:*:grid-cols-2 first:*:gap-x-4"
+        formSchema={schema}
+        fieldConfig={config}
+        values={initialData}
+        onSubmit={onSubmit}
+      >
+        {updateTaskError && (
+          <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
+            {updateTaskError?.message ||
+              `Failed to update task. Please try again.`}
+          </div>
+        )}
 
-      <div className="flex gap-2 pt-4">
-        <AutoFormSubmit disabled={isUpdatingTask}>
-          {isUpdatingTask ? "Updating..." : "Update Task"}
-        </AutoFormSubmit>
-        <Button
-          variant="outline"
-          onClick={onClose}
-          disabled={isUpdatingTask}
-          type="button"
-        >
-          Cancel
-        </Button>
-      </div>
-    </AutoForm>
+        <div className="flex gap-2 pt-4">
+          <AutoFormSubmit disabled={isUpdatingTask}>
+            {isUpdatingTask ? "Updating..." : "Update Task"}
+          </AutoFormSubmit>
+          <Button
+            variant="outline"
+            onClick={onClose}
+            disabled={isUpdatingTask}
+            type="button"
+          >
+            Cancel
+          </Button>
+        </div>
+      </AutoForm>
+      <CardWorkflowsSection
+        taskId={taskId}
+        boardId={boardId}
+        taskData={task ? {
+          title: task.title,
+          description: task.description,
+          priority: task.priority,
+          assigneeId: task.assigneeId,
+          columnId: task.columnId,
+        } : undefined}
+      />
+    </>
   );
 };
 
