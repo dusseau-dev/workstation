@@ -8,6 +8,14 @@ function toJson(value: unknown): Prisma.InputJsonValue {
   return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
 }
 
+/** Ensure unknown data is a plain object before using it as step output context */
+function toObject(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+  return value as Record<string, unknown>;
+}
+
 /** Topological sort using Kahn's algorithm. Returns null if graph has a cycle. */
 function topologicalSort(
   nodes: WorkflowNode[],
@@ -80,6 +88,8 @@ type RunWorkflowParams = {
   boardId?: string;
   cardId?: string;
   triggerId?: string;
+  retryFromNodeId?: string;
+  prefilledStepOutputs?: Record<string, unknown>;
 };
 
 type RunWorkflowResult = {
@@ -106,6 +116,8 @@ export async function runWorkflow(
     boardId,
     cardId,
     triggerId,
+    retryFromNodeId,
+    prefilledStepOutputs,
   } = params;
 
   const workflow = await prisma.workflow.findFirst({
@@ -120,6 +132,7 @@ export async function runWorkflow(
 
   const nodes = (workflow.nodesJson as unknown as WorkflowNode[]) ?? [];
   const edges = (workflow.edgesJson as unknown as WorkflowEdge[]) ?? [];
+  const workflowSnapshot = { nodes, edges };
 
   if (nodes.length === 0) {
     return { success: false, executionId: "", status: "FAILED", error: "Workflow has no nodes" };
@@ -135,6 +148,8 @@ export async function runWorkflow(
       triggerId: triggerId ?? null,
       status: "RUNNING",
       inputJson: toJson(inputJson),
+      // Keep an execution-time graph snapshot even before completion.
+      outputJson: toJson({ __meta: { workflowSnapshot } }),
       startedAt: new Date(),
     },
   });
@@ -157,7 +172,38 @@ export async function runWorkflow(
     };
   }
 
-  const stepOutputs: Record<string, unknown> = {};
+  const allNodeIds = new Set(sortedNodes.map((n) => n.id));
+  const executableNodeIds = new Set<string>();
+
+  if (retryFromNodeId) {
+    if (!allNodeIds.has(retryFromNodeId)) {
+      await prisma.workflowExecution.update({
+        where: { id: execution.id },
+        data: {
+          status: "FAILED",
+          error: `Retry node "${retryFromNodeId}" was not found in this workflow`,
+          completedAt: new Date(),
+        },
+      });
+      return {
+        success: false,
+        executionId: execution.id,
+        status: "FAILED",
+        error: `Retry node "${retryFromNodeId}" was not found in this workflow`,
+      };
+    }
+    executableNodeIds.add(retryFromNodeId);
+    for (const downstreamId of getDownstream(retryFromNodeId, edges, allNodeIds)) {
+      executableNodeIds.add(downstreamId);
+    }
+  } else {
+    for (const nodeId of allNodeIds) {
+      executableNodeIds.add(nodeId);
+    }
+  }
+
+  const stepOutputs: Record<string, unknown> = toObject(prefilledStepOutputs);
+  stepOutputs["__meta"] = { workflowSnapshot };
   // Inject trigger input as a pseudo-step so nodes can reference {{steps.trigger.output.field}}
   stepOutputs["trigger"] = inputJson;
 
@@ -166,6 +212,10 @@ export async function runWorkflow(
   let overallError: string | null = null;
 
   for (const node of sortedNodes) {
+    if (!executableNodeIds.has(node.id)) {
+      continue;
+    }
+
     const incomingEdges = edges.filter((e) => e.target === node.id);
     if (
       incomingEdges.length > 0 &&
@@ -192,10 +242,7 @@ export async function runWorkflow(
         const parentOutput = stepOutputs[edge.source] as
           | { branch?: string }
           | undefined;
-        return (
-          parentOutput?.branch !== undefined &&
-          parentOutput.branch !== edge.sourceHandle
-        );
+        return parentOutput?.branch !== edge.sourceHandle;
       });
 
     if (allBranchesInactive) {
@@ -261,11 +308,7 @@ export async function runWorkflow(
     if (!result.success) {
       overallStatus = "FAILED";
       overallError = result.error ?? "Node execution failed";
-      const downstream = getDownstream(
-        node.id,
-        edges,
-        new Set(sortedNodes.map((n) => n.id))
-      );
+      const downstream = getDownstream(node.id, edges, executableNodeIds);
       for (const downId of downstream) skippedNodes.add(downId);
     }
   }
