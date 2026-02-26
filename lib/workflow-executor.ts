@@ -158,8 +158,10 @@ async function executeComposioAction(
 
   try {
     const composio = getComposioClient();
-    // Filter out internal config keys
-    const { composioApp: _a, composioAction: _b, ...actionParams } = params;
+    // Filter out internal config keys before sending to Composio
+    const actionParams = { ...params };
+    delete actionParams.composioApp;
+    delete actionParams.composioAction;
     const result = await composio.tools.execute(actionName, {
       userId,
       arguments: actionParams,

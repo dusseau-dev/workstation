@@ -9,6 +9,7 @@ import {
   AlertCircle,
   ArrowLeft,
   CheckCircle2,
+  ChevronRight,
   Loader2,
   Play,
   RefreshCw,
@@ -194,6 +195,7 @@ function mapLogStatusToNodeState(status: LogStatus): ExecutionCanvasNodeState {
   if (status === "RUNNING") return "RUNNING";
   if (status === "COMPLETED") return "COMPLETED";
   if (status === "FAILED") return "FAILED";
+  if (status === "SKIPPED") return "SKIPPED";
   return "NOT_REACHED";
 }
 
@@ -215,8 +217,9 @@ function JsonDisclosure({
   const hasValue = value !== null && value !== undefined;
 
   return (
-    <details className="rounded-md border bg-muted/20">
-      <summary className="cursor-pointer list-none px-3 py-2 text-xs font-medium text-muted-foreground">
+    <details className="group rounded-md border bg-muted/20">
+      <summary className="flex cursor-pointer list-none items-center gap-1.5 rounded-md px-3 py-2 text-xs font-medium text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+        <ChevronRight className="h-3.5 w-3.5 shrink-0 transition-transform group-open:rotate-90" />
         {title}
       </summary>
       <div className="border-t px-3 py-2">
@@ -288,7 +291,7 @@ export function WorkflowExecutionDetail({ workflowId, executionId }: Props) {
       refetchInterval: (query) => {
         const status = (query.state.data as { status?: string } | undefined)
           ?.status;
-        return status === "RUNNING" ? 2_000 : false;
+        return status === "RUNNING" || status === "PENDING" ? 2_000 : false;
       },
     }
   );
@@ -390,6 +393,33 @@ export function WorkflowExecutionDetail({ workflowId, executionId }: Props) {
     );
   }
 
+  if (executionQuery.isError) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <Card>
+          <CardHeader>
+            <CardTitle>Failed to load execution</CardTitle>
+            <CardDescription>
+              Something went wrong while fetching execution details. Please try again.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex gap-2">
+            <Button variant="outline" onClick={() => void executionQuery.refetch()}>
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Retry
+            </Button>
+            <Button asChild variant="ghost">
+              <Link href={`/workflows/${workflowId}`}>
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to workflow
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   if (!execution) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -474,7 +504,7 @@ export function WorkflowExecutionDetail({ workflowId, executionId }: Props) {
         <CardHeader className="border-b py-4">
           <CardTitle className="text-base">Execution Graph</CardTitle>
           <CardDescription>
-            Node colors indicate execution state: gray (not reached), blue (running), green (completed), red (failed).
+            Node colors indicate execution state: gray (not reached), blue (running), green (completed), red (failed), amber dashed (skipped).
           </CardDescription>
         </CardHeader>
         <CardContent className="p-0">
@@ -544,7 +574,7 @@ export function WorkflowExecutionDetail({ workflowId, executionId }: Props) {
                           size="sm"
                           variant="outline"
                           onClick={() => void handleRetryFromNode(log.nodeId)}
-                          disabled={retryMutation.isPending}
+                          disabled={retryingNodeId !== null}
                         >
                           {isRetryingThisNode ? (
                             <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />

@@ -18,7 +18,8 @@ export type ExecutionCanvasNodeState =
   | "NOT_REACHED"
   | "RUNNING"
   | "COMPLETED"
-  | "FAILED";
+  | "FAILED"
+  | "SKIPPED";
 
 type Props = {
   nodes: WorkflowNode[];
@@ -49,6 +50,11 @@ const STATUS_STYLES: Record<
     container: "border-red-500/60 bg-red-500/10",
     label: "text-red-700 dark:text-red-300",
     dot: "bg-red-500",
+  },
+  SKIPPED: {
+    container: "border-amber-500/40 bg-amber-500/5 border-dashed",
+    label: "text-amber-600 dark:text-amber-400",
+    dot: "bg-amber-400",
   },
 };
 

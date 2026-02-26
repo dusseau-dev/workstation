@@ -216,6 +216,21 @@ export async function runWorkflow(
       continue;
     }
 
+    // Guard: skip nodes marked downstream of a failed node
+    if (skippedNodes.has(node.id)) {
+      await prisma.workflowExecutionLog.create({
+        data: {
+          executionId: execution.id,
+          nodeId: node.id,
+          nodeName: node.data.label ?? node.id,
+          status: "SKIPPED",
+          startedAt: new Date(),
+          completedAt: new Date(),
+        },
+      });
+      continue;
+    }
+
     const incomingEdges = edges.filter((e) => e.target === node.id);
     if (
       incomingEdges.length > 0 &&

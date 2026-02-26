@@ -67,8 +67,8 @@ export async function POST(request: Request, { params }: Params) {
 
     if (!baseExecution) {
       return NextResponse.json(
-        { error: "Base execution not found" },
-        { status: 404 }
+        { error: "Cannot retry: execution not found or access denied" },
+        { status: 400 }
       );
     }
 
@@ -83,7 +83,7 @@ export async function POST(request: Request, { params }: Params) {
 
     if (!failedStep) {
       return NextResponse.json(
-        { error: "Retry is only allowed from a failed step in this execution" },
+        { error: "Cannot retry: execution not found or access denied" },
         { status: 400 }
       );
     }
@@ -108,7 +108,10 @@ export async function POST(request: Request, { params }: Params) {
   });
 
   if (!result.success && !result.executionId) {
-    return NextResponse.json({ error: result.error }, { status: 400 });
+    return NextResponse.json(
+      { error: "Unable to run this workflow" },
+      { status: 400 }
+    );
   }
 
   return NextResponse.json(result);
