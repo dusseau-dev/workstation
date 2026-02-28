@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useEffect } from "react";
+import { toast } from "sonner";
 import {
   ReactFlow,
   Controls,
@@ -53,17 +54,31 @@ export function WorkflowCanvas() {
   const addComposioNode = useSetAtom(addComposioNodeAtom);
   const save = useSetAtom(saveWorkflowAtom);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isInitialLoadRef = useRef(true);
   const { screenToFlowPosition } = useReactFlow();
 
-  // Debounced autosave on any change
+  // Debounced autosave on any change — surfaces errors via toast
   const debouncedSave = useCallback(() => {
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-    saveTimeoutRef.current = setTimeout(() => { void save(); }, 1000);
+    saveTimeoutRef.current = setTimeout(async () => {
+      try {
+        await save();
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Save failed";
+        console.error("[workflow autosave]", message);
+        toast.error(message);
+      }
+    }, 1000);
   }, [save]);
 
-  // Save on node/edge changes (edges in deps ensures connecting/disconnecting triggers save)
+  // Save on node/edge changes (skip initial load to avoid redundant save)
   useEffect(() => {
-    if (nodes.length > 0) debouncedSave();
+    if (nodes.length === 0) return;
+    if (isInitialLoadRef.current) {
+      isInitialLoadRef.current = false;
+      return;
+    }
+    debouncedSave();
   }, [nodes, edges, debouncedSave]);
 
   // Cleanup on unmount

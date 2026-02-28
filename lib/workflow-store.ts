@@ -233,7 +233,17 @@ export const saveWorkflowAtom = atom(null, async (get, set) => {
         data: { nodesJson: nodes, edgesJson: edges },
       }),
     });
-    if (!res.ok) throw new Error("Save failed");
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new Error(`Save failed (${res.status}): ${text}`);
+    }
+
+    // ZenStack may return null when write is policy-denied but status is 200
+    const body = await res.json().catch(() => null);
+    if (!body) {
+      throw new Error("Save denied by access policy");
+    }
   } finally {
     set(isSavingAtom, false);
   }
