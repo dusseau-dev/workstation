@@ -65,6 +65,8 @@ export function EditBoardForm({
       onSubmit={onSubmit}
       values={{
         name: board.name,
+        description: board.description ?? "",
+        status: board.status,
       }}
     >
       {updateBoardError && (

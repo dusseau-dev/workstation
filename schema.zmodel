@@ -88,6 +88,14 @@ enum ConnectionStatus {
   DISCONNECTED
 }
 
+enum BoardStatus {
+  ACTIVE
+  IN_PROGRESS
+  COMPLETED
+  ON_HOLD
+  ARCHIVED
+}
+
 model User {
   id            String    @id
   name          String    @allow('read', true, true)  // Allow anonymous users to read name field, this is used for blog authors
@@ -226,9 +234,11 @@ model Invitation {
 }
 
 model Board {
-  id             String   @id @default(cuid())
+  id             String       @id @default(cuid())
   name           String
-  createdAt      DateTime @default(now())
+  description    String?
+  status         BoardStatus  @default(ACTIVE)
+  createdAt      DateTime     @default(now())
   organization   Organization? @relation(fields: [organizationId], references: [id])
   organizationId String?  @default(auth().organizationId) @allow('update', false)
   owner          User     @relation("BoardOwner", fields: [ownerId], references: [id])
@@ -288,6 +298,7 @@ model Task {
   assignee    User?    @relation("AssignedTasks", fields: [assigneeId], references: [id])
   assigneeId  String?
   completedAt DateTime?
+  dueDate     DateTime?
   isArchived  Boolean  @default(false)
 
   @@map("task")

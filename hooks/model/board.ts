@@ -326,8 +326,9 @@ export function useSuspenseCountBoard<TArgs extends Prisma.BoardCountArgs, TQuer
     const { endpoint, fetch } = getHooksContext();
     return useSuspenseModelQuery<TQueryFnData, TData, TError>('Board', `${endpoint}/board/count`, args, options, fetch);
 }
+import type { BoardStatus } from '@zenstackhq/runtime/models';
 
-export function useCheckBoard<TError = DefaultError>(args: { operation: PolicyCrudKind; where?: { id?: string; name?: string; organizationId?: string; ownerId?: string }; }, options?: (Omit<UseQueryOptions<boolean, TError, boolean>, 'queryKey'> & ExtraQueryOptions)) {
+export function useCheckBoard<TError = DefaultError>(args: { operation: PolicyCrudKind; where?: { id?: string; name?: string; description?: string; status?: BoardStatus; organizationId?: string; ownerId?: string }; }, options?: (Omit<UseQueryOptions<boolean, TError, boolean>, 'queryKey'> & ExtraQueryOptions)) {
     const { endpoint, fetch } = getHooksContext();
     return useModelQuery<boolean, boolean, TError>('Board', `${endpoint}/board/check`, args, options, fetch);
 }

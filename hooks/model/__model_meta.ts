@@ -464,6 +464,14 @@ const metadata: ModelMeta = {
                 }, name: {
                     name: "name",
                     type: "String",
+                }, description: {
+                    name: "description",
+                    type: "String",
+                    isOptional: true,
+                }, status: {
+                    name: "status",
+                    type: "BoardStatus",
+                    attributes: [{ "name": "@default", "args": [{ "name": "value" }] }],
                 }, createdAt: {
                     name: "createdAt",
                     type: "DateTime",
@@ -628,6 +636,10 @@ const metadata: ModelMeta = {
                     relationField: 'assignee',
                 }, completedAt: {
                     name: "completedAt",
+                    type: "DateTime",
+                    isOptional: true,
+                }, dueDate: {
+                    name: "dueDate",
                     type: "DateTime",
                     isOptional: true,
                 }, isArchived: {

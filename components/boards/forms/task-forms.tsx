@@ -137,6 +137,7 @@ const AddTaskFormComponent = ({
         description: data.description,
         priority: data.priority!,
         assigneeId: data.assigneeId || null,
+        dueDate: data.dueDate || null,
         columnId,
         order: nextOrder,
       },
@@ -154,6 +155,7 @@ const AddTaskFormComponent = ({
           description: data.description,
           priority: data.priority,
           assigneeId: data.assigneeId || null,
+          dueDate: data.dueDate || null,
           columnId,
         },
       }).catch((err) => { console.warn("Trigger fire failed:", err); });
@@ -234,6 +236,7 @@ const EditTaskFormComponent = ({
       priority: task.priority,
       columnId: task.columnId,
       assigneeId: task.assigneeId || "",
+      dueDate: task.dueDate || undefined,
     };
   }, [task]);
 
@@ -274,6 +277,7 @@ const EditTaskFormComponent = ({
     if (data.priority !== task?.priority) changedFields.push("priority");
     if (data.columnId !== task?.columnId) changedFields.push("columnId");
     if ((data.assigneeId || null) !== (task?.assigneeId || null)) changedFields.push("assigneeId");
+    if (String(data.dueDate || "") !== String(task?.dueDate || "")) changedFields.push("dueDate");
 
     await updateTask({
       where: { id: taskId },
@@ -283,6 +287,7 @@ const EditTaskFormComponent = ({
         priority: data.priority,
         columnId: data.columnId,
         assigneeId: data.assigneeId || null,
+        dueDate: data.dueDate || null,
       },
     });
     toast.success("Task updated successfully");
@@ -292,6 +297,7 @@ const EditTaskFormComponent = ({
       description: data.description,
       priority: data.priority,
       assigneeId: data.assigneeId || null,
+      dueDate: data.dueDate || null,
       columnId: data.columnId,
     };
 
@@ -588,8 +594,14 @@ function createTaskFieldConfig(
         <div className="col-span-2">{children}</div>
       ),
     },
-    assigneeId: {
+    dueDate: {
       order: 2,
+      inputProps: {
+        placeholder: "Select due date",
+      },
+    },
+    assigneeId: {
+      order: 4,
       fieldType: ({
         isRequired,
         field,

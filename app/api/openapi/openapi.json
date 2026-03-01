@@ -48,6 +48,16 @@
   ],
   "components": {
     "schemas": {
+      "BoardStatus": {
+        "type": "string",
+        "enum": [
+          "ACTIVE",
+          "IN_PROGRESS",
+          "COMPLETED",
+          "ON_HOLD",
+          "ARCHIVED"
+        ]
+      },
       "Priority": {
         "type": "string",
         "enum": [
@@ -107,6 +117,8 @@
         "enum": [
           "id",
           "name",
+          "description",
+          "status",
           "createdAt",
           "organizationId",
           "ownerId"
@@ -134,6 +146,7 @@
           "columnId",
           "assigneeId",
           "completedAt",
+          "dueDate",
           "isArchived"
         ]
       },
@@ -793,6 +806,19 @@
           "name": {
             "type": "string"
           },
+          "description": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/BoardStatus"
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -851,6 +877,7 @@
         "required": [
           "id",
           "name",
+          "status",
           "createdAt",
           "owner",
           "ownerId"
@@ -949,6 +976,17 @@
             ]
           },
           "completedAt": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string",
+                "format": "date-time"
+              }
+            ]
+          },
+          "dueDate": {
             "oneOf": [
               {
                 "type": "null"
@@ -3762,6 +3800,29 @@
               }
             ]
           },
+          "description": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/StringNullableFilter"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/EnumBoardStatusFilter"
+              },
+              {
+                "$ref": "#/components/schemas/BoardStatus"
+              }
+            ]
+          },
           "createdAt": {
             "oneOf": [
               {
@@ -3840,6 +3901,19 @@
             "$ref": "#/components/schemas/SortOrder"
           },
           "name": {
+            "$ref": "#/components/schemas/SortOrder"
+          },
+          "description": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SortOrder"
+              },
+              {
+                "$ref": "#/components/schemas/SortOrderInput"
+              }
+            ]
+          },
+          "status": {
             "$ref": "#/components/schemas/SortOrder"
           },
           "createdAt": {
@@ -3923,6 +3997,29 @@
               },
               {
                 "type": "string"
+              }
+            ]
+          },
+          "description": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/StringNullableFilter"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/EnumBoardStatusFilter"
+              },
+              {
+                "$ref": "#/components/schemas/BoardStatus"
               }
             ]
           },
@@ -4049,6 +4146,29 @@
               },
               {
                 "type": "string"
+              }
+            ]
+          },
+          "description": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/StringNullableWithAggregatesFilter"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/EnumBoardStatusWithAggregatesFilter"
+              },
+              {
+                "$ref": "#/components/schemas/BoardStatus"
               }
             ]
           },
@@ -4508,6 +4628,20 @@
               }
             ]
           },
+          "dueDate": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/DateTimeNullableFilter"
+              },
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "isArchived": {
             "oneOf": [
               {
@@ -4588,6 +4722,16 @@
             ]
           },
           "completedAt": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SortOrder"
+              },
+              {
+                "$ref": "#/components/schemas/SortOrderInput"
+              }
+            ]
+          },
+          "dueDate": {
             "oneOf": [
               {
                 "$ref": "#/components/schemas/SortOrder"
@@ -4735,6 +4879,20 @@
             ]
           },
           "completedAt": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/DateTimeNullableFilter"
+              },
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "dueDate": {
             "oneOf": [
               {
                 "$ref": "#/components/schemas/DateTimeNullableFilter"
@@ -4917,6 +5075,20 @@
             ]
           },
           "completedAt": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/DateTimeNullableWithAggregatesFilter"
+              },
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "dueDate": {
             "oneOf": [
               {
                 "$ref": "#/components/schemas/DateTimeNullableWithAggregatesFilter"
@@ -9162,6 +9334,19 @@
           "name": {
             "type": "string"
           },
+          "description": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/BoardStatus"
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -9212,6 +9397,29 @@
               }
             ]
           },
+          "description": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "$ref": "#/components/schemas/NullableStringFieldUpdateOperationsInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/BoardStatus"
+              },
+              {
+                "$ref": "#/components/schemas/EnumBoardStatusFieldUpdateOperationsInput"
+              }
+            ]
+          },
           "createdAt": {
             "oneOf": [
               {
@@ -9251,6 +9459,19 @@
           },
           "name": {
             "type": "string"
+          },
+          "description": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/BoardStatus"
           },
           "createdAt": {
             "type": "string",
@@ -9294,6 +9515,29 @@
               },
               {
                 "$ref": "#/components/schemas/StringFieldUpdateOperationsInput"
+              }
+            ]
+          },
+          "description": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "$ref": "#/components/schemas/NullableStringFieldUpdateOperationsInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/BoardStatus"
+              },
+              {
+                "$ref": "#/components/schemas/EnumBoardStatusFieldUpdateOperationsInput"
               }
             ]
           },
@@ -9477,6 +9721,17 @@
               }
             ]
           },
+          "dueDate": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string",
+                "format": "date-time"
+              }
+            ]
+          },
           "isArchived": {
             "type": "boolean"
           },
@@ -9585,6 +9840,20 @@
               }
             ]
           },
+          "dueDate": {
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "$ref": "#/components/schemas/NullableDateTimeFieldUpdateOperationsInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "isArchived": {
             "oneOf": [
               {
@@ -9650,6 +9919,17 @@
             ]
           },
           "completedAt": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string",
+                "format": "date-time"
+              }
+            ]
+          },
+          "dueDate": {
             "oneOf": [
               {
                 "type": "null"
@@ -9749,6 +10029,20 @@
             ]
           },
           "completedAt": {
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "$ref": "#/components/schemas/NullableDateTimeFieldUpdateOperationsInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "dueDate": {
             "oneOf": [
               {
                 "type": "string",
@@ -12740,6 +13034,36 @@
           }
         }
       },
+      "EnumBoardStatusFilter": {
+        "type": "object",
+        "properties": {
+          "equals": {
+            "$ref": "#/components/schemas/BoardStatus"
+          },
+          "in": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BoardStatus"
+            }
+          },
+          "notIn": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BoardStatus"
+            }
+          },
+          "not": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/BoardStatus"
+              },
+              {
+                "$ref": "#/components/schemas/NestedEnumBoardStatusFilter"
+              }
+            ]
+          }
+        }
+      },
       "OrganizationNullableScalarRelationFilter": {
         "type": "object",
         "properties": {
@@ -12806,6 +13130,45 @@
         "properties": {
           "_count": {
             "$ref": "#/components/schemas/SortOrder"
+          }
+        }
+      },
+      "EnumBoardStatusWithAggregatesFilter": {
+        "type": "object",
+        "properties": {
+          "equals": {
+            "$ref": "#/components/schemas/BoardStatus"
+          },
+          "in": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BoardStatus"
+            }
+          },
+          "notIn": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BoardStatus"
+            }
+          },
+          "not": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/BoardStatus"
+              },
+              {
+                "$ref": "#/components/schemas/NestedEnumBoardStatusWithAggregatesFilter"
+              }
+            ]
+          },
+          "_count": {
+            "$ref": "#/components/schemas/NestedIntFilter"
+          },
+          "_min": {
+            "$ref": "#/components/schemas/NestedEnumBoardStatusFilter"
+          },
+          "_max": {
+            "$ref": "#/components/schemas/NestedEnumBoardStatusFilter"
           }
         }
       },
@@ -21871,6 +22234,14 @@
           }
         }
       },
+      "EnumBoardStatusFieldUpdateOperationsInput": {
+        "type": "object",
+        "properties": {
+          "set": {
+            "$ref": "#/components/schemas/BoardStatus"
+          }
+        }
+      },
       "OrganizationUpdateOneWithoutBoardsNestedInput": {
         "type": "object",
         "properties": {
@@ -27761,6 +28132,75 @@
           }
         }
       },
+      "NestedEnumBoardStatusFilter": {
+        "type": "object",
+        "properties": {
+          "equals": {
+            "$ref": "#/components/schemas/BoardStatus"
+          },
+          "in": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BoardStatus"
+            }
+          },
+          "notIn": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BoardStatus"
+            }
+          },
+          "not": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/BoardStatus"
+              },
+              {
+                "$ref": "#/components/schemas/NestedEnumBoardStatusFilter"
+              }
+            ]
+          }
+        }
+      },
+      "NestedEnumBoardStatusWithAggregatesFilter": {
+        "type": "object",
+        "properties": {
+          "equals": {
+            "$ref": "#/components/schemas/BoardStatus"
+          },
+          "in": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BoardStatus"
+            }
+          },
+          "notIn": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BoardStatus"
+            }
+          },
+          "not": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/BoardStatus"
+              },
+              {
+                "$ref": "#/components/schemas/NestedEnumBoardStatusWithAggregatesFilter"
+              }
+            ]
+          },
+          "_count": {
+            "$ref": "#/components/schemas/NestedIntFilter"
+          },
+          "_min": {
+            "$ref": "#/components/schemas/NestedEnumBoardStatusFilter"
+          },
+          "_max": {
+            "$ref": "#/components/schemas/NestedEnumBoardStatusFilter"
+          }
+        }
+      },
       "NestedIntWithAggregatesFilter": {
         "type": "object",
         "properties": {
@@ -29043,6 +29483,17 @@
               }
             ]
           },
+          "dueDate": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string",
+                "format": "date-time"
+              }
+            ]
+          },
           "isArchived": {
             "type": "boolean"
           },
@@ -29093,6 +29544,17 @@
             "type": "string"
           },
           "completedAt": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string",
+                "format": "date-time"
+              }
+            ]
+          },
+          "dueDate": {
             "oneOf": [
               {
                 "type": "null"
@@ -29168,6 +29630,19 @@
           "name": {
             "type": "string"
           },
+          "description": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/BoardStatus"
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -29200,6 +29675,19 @@
           },
           "name": {
             "type": "string"
+          },
+          "description": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/BoardStatus"
           },
           "createdAt": {
             "type": "string",
@@ -29287,6 +29775,19 @@
           "name": {
             "type": "string"
           },
+          "description": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/BoardStatus"
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -29319,6 +29820,19 @@
           },
           "name": {
             "type": "string"
+          },
+          "description": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/BoardStatus"
           },
           "createdAt": {
             "type": "string",
@@ -31115,6 +31629,20 @@
               }
             ]
           },
+          "dueDate": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/DateTimeNullableFilter"
+              },
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "isArchived": {
             "oneOf": [
               {
@@ -31256,6 +31784,29 @@
               },
               {
                 "type": "string"
+              }
+            ]
+          },
+          "description": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/StringNullableFilter"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/EnumBoardStatusFilter"
+              },
+              {
+                "$ref": "#/components/schemas/BoardStatus"
               }
             ]
           },
@@ -32503,6 +33054,19 @@
           "name": {
             "type": "string"
           },
+          "description": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/BoardStatus"
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -32535,6 +33099,19 @@
           },
           "name": {
             "type": "string"
+          },
+          "description": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/BoardStatus"
           },
           "createdAt": {
             "type": "string",
@@ -38271,6 +38848,19 @@
           "name": {
             "type": "string"
           },
+          "description": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/BoardStatus"
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -38303,6 +38893,19 @@
           },
           "name": {
             "type": "string"
+          },
+          "description": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/BoardStatus"
           },
           "createdAt": {
             "type": "string",
@@ -38401,6 +39004,17 @@
               }
             ]
           },
+          "dueDate": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string",
+                "format": "date-time"
+              }
+            ]
+          },
           "isArchived": {
             "type": "boolean"
           },
@@ -38457,6 +39071,17 @@
             ]
           },
           "completedAt": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string",
+                "format": "date-time"
+              }
+            ]
+          },
+          "dueDate": {
             "oneOf": [
               {
                 "type": "null"
@@ -38598,6 +39223,29 @@
               }
             ]
           },
+          "description": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "$ref": "#/components/schemas/NullableStringFieldUpdateOperationsInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/BoardStatus"
+              },
+              {
+                "$ref": "#/components/schemas/EnumBoardStatusFieldUpdateOperationsInput"
+              }
+            ]
+          },
           "createdAt": {
             "oneOf": [
               {
@@ -38646,6 +39294,29 @@
               },
               {
                 "$ref": "#/components/schemas/StringFieldUpdateOperationsInput"
+              }
+            ]
+          },
+          "description": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "$ref": "#/components/schemas/NullableStringFieldUpdateOperationsInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/BoardStatus"
+              },
+              {
+                "$ref": "#/components/schemas/EnumBoardStatusFieldUpdateOperationsInput"
               }
             ]
           },
@@ -43188,6 +43859,19 @@
           "name": {
             "type": "string"
           },
+          "description": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/BoardStatus"
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -43220,6 +43904,19 @@
           },
           "name": {
             "type": "string"
+          },
+          "description": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/BoardStatus"
           },
           "createdAt": {
             "type": "string",
@@ -44082,6 +44779,29 @@
               }
             ]
           },
+          "description": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "$ref": "#/components/schemas/NullableStringFieldUpdateOperationsInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/BoardStatus"
+              },
+              {
+                "$ref": "#/components/schemas/EnumBoardStatusFieldUpdateOperationsInput"
+              }
+            ]
+          },
           "createdAt": {
             "oneOf": [
               {
@@ -44130,6 +44850,29 @@
               },
               {
                 "$ref": "#/components/schemas/StringFieldUpdateOperationsInput"
+              }
+            ]
+          },
+          "description": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "$ref": "#/components/schemas/NullableStringFieldUpdateOperationsInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/BoardStatus"
+              },
+              {
+                "$ref": "#/components/schemas/EnumBoardStatusFieldUpdateOperationsInput"
               }
             ]
           },
@@ -44564,6 +45307,19 @@
           "name": {
             "type": "string"
           },
+          "description": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/BoardStatus"
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -44596,6 +45352,19 @@
           },
           "name": {
             "type": "string"
+          },
+          "description": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/BoardStatus"
           },
           "createdAt": {
             "type": "string",
@@ -45765,6 +46534,29 @@
               }
             ]
           },
+          "description": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "$ref": "#/components/schemas/NullableStringFieldUpdateOperationsInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/BoardStatus"
+              },
+              {
+                "$ref": "#/components/schemas/EnumBoardStatusFieldUpdateOperationsInput"
+              }
+            ]
+          },
           "createdAt": {
             "oneOf": [
               {
@@ -45813,6 +46605,29 @@
               },
               {
                 "$ref": "#/components/schemas/StringFieldUpdateOperationsInput"
+              }
+            ]
+          },
+          "description": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "$ref": "#/components/schemas/NullableStringFieldUpdateOperationsInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/BoardStatus"
+              },
+              {
+                "$ref": "#/components/schemas/EnumBoardStatusFieldUpdateOperationsInput"
               }
             ]
           },
@@ -48554,6 +49369,17 @@
               }
             ]
           },
+          "dueDate": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string",
+                "format": "date-time"
+              }
+            ]
+          },
           "isArchived": {
             "type": "boolean"
           }
@@ -48572,6 +49398,19 @@
           },
           "name": {
             "type": "string"
+          },
+          "description": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/BoardStatus"
           },
           "createdAt": {
             "type": "string",
@@ -49999,6 +50838,20 @@
               }
             ]
           },
+          "dueDate": {
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "$ref": "#/components/schemas/NullableDateTimeFieldUpdateOperationsInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "isArchived": {
             "oneOf": [
               {
@@ -50103,6 +50956,20 @@
             ]
           },
           "completedAt": {
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "$ref": "#/components/schemas/NullableDateTimeFieldUpdateOperationsInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "dueDate": {
             "oneOf": [
               {
                 "type": "string",
@@ -50230,6 +51097,20 @@
               }
             ]
           },
+          "dueDate": {
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "$ref": "#/components/schemas/NullableDateTimeFieldUpdateOperationsInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "isArchived": {
             "oneOf": [
               {
@@ -50262,6 +51143,29 @@
               },
               {
                 "$ref": "#/components/schemas/StringFieldUpdateOperationsInput"
+              }
+            ]
+          },
+          "description": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "$ref": "#/components/schemas/NullableStringFieldUpdateOperationsInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/BoardStatus"
+              },
+              {
+                "$ref": "#/components/schemas/EnumBoardStatusFieldUpdateOperationsInput"
               }
             ]
           },
@@ -50313,6 +51217,29 @@
               },
               {
                 "$ref": "#/components/schemas/StringFieldUpdateOperationsInput"
+              }
+            ]
+          },
+          "description": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "$ref": "#/components/schemas/NullableStringFieldUpdateOperationsInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/BoardStatus"
+              },
+              {
+                "$ref": "#/components/schemas/EnumBoardStatusFieldUpdateOperationsInput"
               }
             ]
           },
@@ -50377,6 +51304,29 @@
               }
             ]
           },
+          "description": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "$ref": "#/components/schemas/NullableStringFieldUpdateOperationsInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/BoardStatus"
+              },
+              {
+                "$ref": "#/components/schemas/EnumBoardStatusFieldUpdateOperationsInput"
+              }
+            ]
+          },
           "createdAt": {
             "oneOf": [
               {
@@ -50423,6 +51373,29 @@
               },
               {
                 "$ref": "#/components/schemas/StringFieldUpdateOperationsInput"
+              }
+            ]
+          },
+          "description": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "$ref": "#/components/schemas/NullableStringFieldUpdateOperationsInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/BoardStatus"
+              },
+              {
+                "$ref": "#/components/schemas/EnumBoardStatusFieldUpdateOperationsInput"
               }
             ]
           },
@@ -50474,6 +51447,29 @@
               },
               {
                 "$ref": "#/components/schemas/StringFieldUpdateOperationsInput"
+              }
+            ]
+          },
+          "description": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "$ref": "#/components/schemas/NullableStringFieldUpdateOperationsInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/BoardStatus"
+              },
+              {
+                "$ref": "#/components/schemas/EnumBoardStatusFieldUpdateOperationsInput"
               }
             ]
           },
@@ -50542,6 +51538,29 @@
               },
               {
                 "$ref": "#/components/schemas/StringFieldUpdateOperationsInput"
+              }
+            ]
+          },
+          "description": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "$ref": "#/components/schemas/NullableStringFieldUpdateOperationsInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/BoardStatus"
+              },
+              {
+                "$ref": "#/components/schemas/EnumBoardStatusFieldUpdateOperationsInput"
               }
             ]
           },
@@ -51969,6 +52988,19 @@
           "name": {
             "type": "string"
           },
+          "description": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/BoardStatus"
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -52574,6 +53606,29 @@
               }
             ]
           },
+          "description": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "$ref": "#/components/schemas/NullableStringFieldUpdateOperationsInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/BoardStatus"
+              },
+              {
+                "$ref": "#/components/schemas/EnumBoardStatusFieldUpdateOperationsInput"
+              }
+            ]
+          },
           "createdAt": {
             "oneOf": [
               {
@@ -52622,6 +53677,29 @@
               },
               {
                 "$ref": "#/components/schemas/StringFieldUpdateOperationsInput"
+              }
+            ]
+          },
+          "description": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "$ref": "#/components/schemas/NullableStringFieldUpdateOperationsInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/BoardStatus"
+              },
+              {
+                "$ref": "#/components/schemas/EnumBoardStatusFieldUpdateOperationsInput"
               }
             ]
           },
@@ -52680,6 +53758,29 @@
               },
               {
                 "$ref": "#/components/schemas/StringFieldUpdateOperationsInput"
+              }
+            ]
+          },
+          "description": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "$ref": "#/components/schemas/NullableStringFieldUpdateOperationsInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/BoardStatus"
+              },
+              {
+                "$ref": "#/components/schemas/EnumBoardStatusFieldUpdateOperationsInput"
               }
             ]
           },
@@ -55414,6 +56515,17 @@
               }
             ]
           },
+          "dueDate": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string",
+                "format": "date-time"
+              }
+            ]
+          },
           "isArchived": {
             "type": "boolean"
           }
@@ -55502,6 +56614,20 @@
             ]
           },
           "completedAt": {
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "$ref": "#/components/schemas/NullableDateTimeFieldUpdateOperationsInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "dueDate": {
             "oneOf": [
               {
                 "type": "string",
@@ -55635,6 +56761,20 @@
               }
             ]
           },
+          "dueDate": {
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "$ref": "#/components/schemas/NullableDateTimeFieldUpdateOperationsInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "isArchived": {
             "oneOf": [
               {
@@ -55739,6 +56879,20 @@
             ]
           },
           "completedAt": {
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "$ref": "#/components/schemas/NullableDateTimeFieldUpdateOperationsInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "dueDate": {
             "oneOf": [
               {
                 "type": "string",
@@ -59225,6 +60379,12 @@
           "name": {
             "type": "boolean"
           },
+          "description": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "boolean"
+          },
           "createdAt": {
             "type": "boolean"
           },
@@ -59404,6 +60564,9 @@
             "type": "boolean"
           },
           "completedAt": {
+            "type": "boolean"
+          },
+          "dueDate": {
             "type": "boolean"
           },
           "isArchived": {
@@ -59949,6 +61112,12 @@
           "name": {
             "type": "boolean"
           },
+          "description": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "boolean"
+          },
           "createdAt": {
             "type": "boolean"
           },
@@ -59972,6 +61141,12 @@
           "name": {
             "type": "boolean"
           },
+          "description": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "boolean"
+          },
           "createdAt": {
             "type": "boolean"
           },
@@ -59990,6 +61165,12 @@
             "type": "boolean"
           },
           "name": {
+            "type": "boolean"
+          },
+          "description": {
+            "type": "boolean"
+          },
+          "status": {
             "type": "boolean"
           },
           "createdAt": {
@@ -60106,6 +61287,9 @@
           "completedAt": {
             "type": "boolean"
           },
+          "dueDate": {
+            "type": "boolean"
+          },
           "isArchived": {
             "type": "boolean"
           },
@@ -60163,6 +61347,9 @@
           "completedAt": {
             "type": "boolean"
           },
+          "dueDate": {
+            "type": "boolean"
+          },
           "isArchived": {
             "type": "boolean"
           }
@@ -60199,6 +61386,9 @@
             "type": "boolean"
           },
           "completedAt": {
+            "type": "boolean"
+          },
+          "dueDate": {
             "type": "boolean"
           },
           "isArchived": {
@@ -60919,6 +62109,19 @@
           "name": {
             "type": "string"
           },
+          "description": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/BoardStatus"
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -60970,6 +62173,7 @@
         "required": [
           "id",
           "name",
+          "status",
           "createdAt",
           "ownerId"
         ]
@@ -61204,6 +62408,17 @@
             ]
           },
           "completedAt": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string",
+                "format": "date-time"
+              }
+            ]
+          },
+          "dueDate": {
             "oneOf": [
               {
                 "type": "null"
@@ -62156,6 +63371,12 @@
           "name": {
             "type": "integer"
           },
+          "description": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "integer"
+          },
           "createdAt": {
             "type": "integer"
           },
@@ -62172,6 +63393,8 @@
         "required": [
           "id",
           "name",
+          "description",
+          "status",
           "createdAt",
           "organizationId",
           "ownerId",
@@ -62198,6 +63421,26 @@
               },
               {
                 "type": "string"
+              }
+            ]
+          },
+          "description": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "status": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BoardStatus"
               }
             ]
           },
@@ -62254,6 +63497,26 @@
               },
               {
                 "type": "string"
+              }
+            ]
+          },
+          "description": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "status": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BoardStatus"
               }
             ]
           },
@@ -62470,6 +63733,9 @@
           "completedAt": {
             "type": "integer"
           },
+          "dueDate": {
+            "type": "integer"
+          },
           "isArchived": {
             "type": "integer"
           },
@@ -62488,6 +63754,7 @@
           "columnId",
           "assigneeId",
           "completedAt",
+          "dueDate",
           "isArchived",
           "_all"
         ]
@@ -62628,6 +63895,17 @@
               }
             ]
           },
+          "dueDate": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string",
+                "format": "date-time"
+              }
+            ]
+          },
           "isArchived": {
             "oneOf": [
               {
@@ -62736,6 +64014,17 @@
             ]
           },
           "completedAt": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string",
+                "format": "date-time"
+              }
+            ]
+          },
+          "dueDate": {
             "oneOf": [
               {
                 "type": "null"
