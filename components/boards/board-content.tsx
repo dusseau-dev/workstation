@@ -23,6 +23,7 @@ import { KanbanContent, KanbanOverlay } from "@/components/boards/kanban-content
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { BoardAutomations } from "@/components/boards/board-automations";
 import { triggerWorkflow } from "@/lib/actions/trigger-workflow";
+import { CommandBar } from "@/components/boards/command-bar";
 
 type TaskWithAssignee = Task & { assignee: User | null };
 
@@ -51,7 +52,7 @@ export function BoardContent({ slug, initialData }: Props) {
     );
   });
 
-  const { modalState, openAddColumnModal, openEditBoardModal, openDeleteBoardModal } = useModalQuery();
+  const { modalState, openAddColumnModal, openAddTaskModal, openEditBoardModal, openDeleteBoardModal } = useModalQuery();
 
 
   const isInitialRender = useRef(true);
@@ -263,12 +264,13 @@ export function BoardContent({ slug, initialData }: Props) {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto py-8">
-        <div className="flex justify-between items-center mb-8">
-          <Skeleton className="h-9 w-64" />
-          <Skeleton className="h-9 w-24" />
-        </div>
-        <div className="mb-8">
+      <div className="dot-grid-bg min-h-[calc(100svh-4rem)]">
+        <div className="mx-auto max-w-7xl px-6 py-8 lg:px-10">
+          <div className="space-y-2 mb-8">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-8 w-64" />
+            <Skeleton className="h-4 w-48" />
+          </div>
           <BoardSkeleton />
         </div>
       </div>
@@ -277,26 +279,48 @@ export function BoardContent({ slug, initialData }: Props) {
 
   if (error || !board) {
     return (
-      <div className="container mx-auto py-8">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-secondary-foreground">Board not found</h1>
+      <div className="dot-grid-bg min-h-[calc(100svh-4rem)]">
+        <div className="mx-auto max-w-7xl px-6 py-8 lg:px-10">
+          <h1 className="text-[28px] font-medium tracking-[-0.02em] text-secondary-foreground">Board not found</h1>
+          <p className="text-sm text-muted-foreground mt-2">
+            {error?.message ||
+              "The board you're looking for doesn't exist or you don't have access to it."}
+          </p>
         </div>
-        <p className="text-muted-foreground">
-          {error?.message ||
-            "The board you're looking for doesn't exist or you don't have access to it."}
-        </p>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto py-8">
-      <ActionHeading title={board.name} isLoading={isLoading} isFetching={isFetching} isPaused={isAnyModalOpen}>
-        <DropdownMenu>
+    <div className="dot-grid-bg min-h-[calc(100svh-4rem)]">
+      <div className="mx-auto max-w-7xl px-6 py-8 lg:px-10">
+        <ActionHeading
+          title={board.name}
+          description={board.description}
+          status={board.status}
+          breadcrumbs={[
+            { label: "Boards", href: "/boards" },
+            { label: board.name },
+          ]}
+          isLoading={isLoading}
+          isFetching={isFetching}
+          isPaused={isAnyModalOpen}
+        >
+          <Button
+            onClick={() => {
+              if (board.columns.length > 0) {
+                openAddTaskModal(board.columns[0].id);
+              }
+            }}
+            disabled={board.columns.length === 0}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            New Task
+          </Button>
+          <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline">
-                <Settings className="mr-2 h-4 w-4" />
-                Actions
+              <Button variant="outline" size="icon">
+                <Settings className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -317,55 +341,58 @@ export function BoardContent({ slug, initialData }: Props) {
                 Delete Board
               </DropdownMenuItem>
             </DropdownMenuContent>
-        </DropdownMenu>
-      </ActionHeading>
+          </DropdownMenu>
+        </ActionHeading>
 
-      <Tabs defaultValue="kanban">
-        <TabsList>
-          <TabsTrigger value="kanban">Board</TabsTrigger>
-          <TabsTrigger value="automations">
-            <Zap className="h-3.5 w-3.5 mr-1.5" />
-            Automations
-          </TabsTrigger>
-        </TabsList>
+        <Tabs defaultValue="kanban">
+          <TabsList>
+            <TabsTrigger value="kanban">Board</TabsTrigger>
+            <TabsTrigger value="automations">
+              <Zap className="h-3.5 w-3.5 mr-1.5" />
+              Automations
+            </TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="kanban">
-          <div className="mb-8">
-            {board.columns.length > 0 ? (
-              <KanbanContent
-                value={kanbanState}
-                onValueChange={handleKanbanChange}
-                columns={board.columns}
-              >
-                <KanbanOverlay />
-              </KanbanContent>
-            ) : (
-              <div className="text-center py-12">
-                <div className="flex flex-col items-center gap-4">
-                  <div className="rounded-full bg-muted p-6">
-                    <Plus className="h-8 w-8 text-muted-foreground" />
+          <TabsContent value="kanban">
+            <div className="mb-8">
+              {board.columns.length > 0 ? (
+                <KanbanContent
+                  value={kanbanState}
+                  onValueChange={handleKanbanChange}
+                  columns={board.columns}
+                >
+                  <KanbanOverlay />
+                </KanbanContent>
+              ) : (
+                <div className="text-center py-12">
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="rounded-full bg-muted p-6">
+                      <Plus className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                    <div className="space-y-2">
+                      <h3 className="text-lg font-semibold">No columns yet</h3>
+                      <p className="text-muted-foreground max-w-md">
+                        This board doesn&apos;t have any columns yet. Create your
+                        first column to start organizing your tasks.
+                      </p>
+                    </div>
+                    <Button onClick={() => openAddColumnModal(board.id)}>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add Column
+                    </Button>
                   </div>
-                  <div className="space-y-2">
-                    <h3 className="text-lg font-semibold">No columns yet</h3>
-                    <p className="text-muted-foreground max-w-md">
-                      This board doesn&apos;t have any columns yet. Create your
-                      first column to start organizing your tasks.
-                    </p>
-                  </div>
-                  <Button onClick={() => openAddColumnModal(board.id)}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Column
-                  </Button>
                 </div>
-              </div>
-            )}
-          </div>
-        </TabsContent>
+              )}
+            </div>
+          </TabsContent>
 
-        <TabsContent value="automations">
-          <BoardAutomations boardId={board.id} columns={board.columns} />
-        </TabsContent>
-      </Tabs>
+          <TabsContent value="automations">
+            <BoardAutomations boardId={board.id} columns={board.columns} />
+          </TabsContent>
+        </Tabs>
+      </div>
+
+      <CommandBar />
     </div>
   );
 }
