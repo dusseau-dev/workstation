@@ -124,7 +124,7 @@ const KanbanContentComponent = ({
     >
       <Kanban.Board
         className={cn(
-          "flex flex-col gap-5 md:auto-rows-fr md:grid-cols-1 md:grid",
+          "grid grid-cols-1 gap-5",
           mdClass
         )}
       >

@@ -1,29 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Settings, Trash2, Plus, Pencil, Zap } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { useFindUniqueBoard } from "@/hooks/model";
 import { useUpdateTask, useUpdateColumn } from "@/hooks/model";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Board, Column, Task, User } from "@zenstackhq/runtime/models";
-import { BoardSkeleton } from "@/components/boards/board-skeleton";
 import { useModalQuery } from "@/lib/use-modal-query";
-import { ActionHeading } from "./action-heading";
 import { FIND_UNIQUE_BOARD } from "@/lib/constants";
 import { KanbanContent, KanbanOverlay } from "@/components/boards/kanban-content";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { BoardAutomations } from "@/components/boards/board-automations";
 import { triggerWorkflow } from "@/lib/actions/trigger-workflow";
 import { CommandBar } from "@/components/boards/command-bar";
+import { DotGridBackground } from "@/components/onboarding/dot-grid-background";
 
 type TaskWithAssignee = Task & { assignee: User | null };
 
@@ -52,7 +40,7 @@ export function BoardContent({ slug, initialData }: Props) {
     );
   });
 
-  const { modalState, openAddColumnModal, openAddTaskModal, openEditBoardModal, openDeleteBoardModal } = useModalQuery();
+  const { modalState, openAddColumnModal } = useModalQuery();
 
 
   const isInitialRender = useRef(true);
@@ -72,7 +60,6 @@ export function BoardContent({ slug, initialData }: Props) {
   const {
     data: board,
     isLoading,
-    isFetching,
     error,
     refetch,
     queryKey,
@@ -264,14 +251,15 @@ export function BoardContent({ slug, initialData }: Props) {
 
   if (isLoading) {
     return (
-      <div className="dot-grid-bg min-h-[calc(100svh-4rem)]">
-        <div className="mx-auto max-w-7xl px-6 py-8 lg:px-10">
-          <div className="space-y-2 mb-8">
-            <Skeleton className="h-4 w-32" />
-            <Skeleton className="h-8 w-64" />
-            <Skeleton className="h-4 w-48" />
-          </div>
-          <BoardSkeleton />
+      <div
+        className="relative min-h-screen flex flex-col overflow-hidden"
+        style={{ backgroundColor: "#EBEBEB", fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif" }}
+      >
+        <DotGridBackground />
+        <div className="relative z-[1] flex-1 p-10">
+          <Skeleton className="h-4 w-32 mb-3" style={{ background: "#DEDEDE" }} />
+          <Skeleton className="h-8 w-64 mb-2" style={{ background: "#DEDEDE" }} />
+          <Skeleton className="h-4 w-48" style={{ background: "#DEDEDE" }} />
         </div>
       </div>
     );
@@ -279,117 +267,78 @@ export function BoardContent({ slug, initialData }: Props) {
 
   if (error || !board) {
     return (
-      <div className="dot-grid-bg min-h-[calc(100svh-4rem)]">
-        <div className="mx-auto max-w-7xl px-6 py-8 lg:px-10">
-          <h1 className="text-[28px] font-medium tracking-[-0.02em] text-secondary-foreground">Board not found</h1>
-          <p className="text-sm text-muted-foreground mt-2">
-            {error?.message ||
-              "The board you're looking for doesn't exist or you don't have access to it."}
+      <div
+        className="relative min-h-screen flex flex-col"
+        style={{ backgroundColor: "#EBEBEB", fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif" }}
+      >
+        <div className="relative z-[1] p-10">
+          <h1 className="text-[28px] font-medium" style={{ color: "#1A1A1A", letterSpacing: "-0.02em" }}>Board not found</h1>
+          <p className="text-sm mt-2" style={{ color: "#8F8F8F" }}>
+            {error?.message || "The board you're looking for doesn't exist or you don't have access to it."}
           </p>
         </div>
       </div>
     );
   }
 
+  const statusLabel = board.status?.replace(/_/g, " ") || "Active";
+
   return (
-    <div className="dot-grid-bg min-h-[calc(100svh-4rem)]">
-      <div className="mx-auto max-w-7xl px-6 py-8 lg:px-10">
-        <ActionHeading
-          title={board.name}
-          description={board.description}
-          status={board.status}
-          breadcrumbs={[
-            { label: "Boards", href: "/boards" },
-            { label: board.name },
-          ]}
-          isLoading={isLoading}
-          isFetching={isFetching}
-          isPaused={isAnyModalOpen}
-        >
-          <Button
-            onClick={() => {
-              if (board.columns.length > 0) {
-                openAddTaskModal(board.columns[0].id);
-              }
-            }}
-            disabled={board.columns.length === 0}
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            New Task
-          </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon">
-                <Settings className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => openAddColumnModal(board.id)}>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Column
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => openEditBoardModal()}>
-                <Pencil className="mr-2 h-4 w-4" />
-                Edit Board
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => openDeleteBoardModal()}
-                className="text-red-600 focus:text-red-600"
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete Board
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </ActionHeading>
+    <div
+      className="relative min-h-screen flex flex-col overflow-hidden"
+      style={{ backgroundColor: "#EBEBEB", color: "#1A1A1A", fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif" }}
+    >
+      <DotGridBackground />
 
-        <Tabs defaultValue="kanban">
-          <TabsList>
-            <TabsTrigger value="kanban">Board</TabsTrigger>
-            <TabsTrigger value="automations">
-              <Zap className="h-3.5 w-3.5 mr-1.5" />
-              Automations
-            </TabsTrigger>
-          </TabsList>
+      <div className="relative z-[1] flex-1 flex flex-col p-10 w-full">
+        {/* Breadcrumb */}
+        <nav className="flex items-center gap-2 text-[13px] mb-3" style={{ color: "#8F8F8F" }}>
+          <a href="/onboarding" className="no-underline transition-colors hover:opacity-70" style={{ color: "#8F8F8F" }}>Workflows</a>
+          <span style={{ color: "#C4C4C4" }}>/</span>
+          <span style={{ color: "#1A1A1A" }}>{board.name}</span>
+        </nav>
 
-          <TabsContent value="kanban">
-            <div className="mb-8">
-              {board.columns.length > 0 ? (
-                <KanbanContent
-                  value={kanbanState}
-                  onValueChange={handleKanbanChange}
-                  columns={board.columns}
-                >
-                  <KanbanOverlay />
-                </KanbanContent>
-              ) : (
-                <div className="text-center py-12">
-                  <div className="flex flex-col items-center gap-4">
-                    <div className="rounded-full bg-muted p-6">
-                      <Plus className="h-8 w-8 text-muted-foreground" />
-                    </div>
-                    <div className="space-y-2">
-                      <h3 className="text-lg font-semibold">No columns yet</h3>
-                      <p className="text-muted-foreground max-w-md">
-                        This board doesn&apos;t have any columns yet. Create your
-                        first column to start organizing your tasks.
-                      </p>
-                    </div>
-                    <Button onClick={() => openAddColumnModal(board.id)}>
-                      <Plus className="mr-2 h-4 w-4" />
-                      Add Column
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </TabsContent>
+        {/* Header */}
+        <header className="mb-8">
+          <h1 className="text-[28px] font-medium flex items-center gap-3" style={{ letterSpacing: "-0.02em" }}>
+            {board.name}
+            <span
+              className="text-[10px] font-semibold uppercase px-2 py-1 rounded"
+              style={{ background: "#E0F2FE", color: "#0369A1", letterSpacing: "0.05em" }}
+            >
+              {statusLabel}
+            </span>
+          </h1>
+          {board.description && (
+            <p className="text-sm mt-1" style={{ color: "#8F8F8F" }}>{board.description}</p>
+          )}
+        </header>
 
-          <TabsContent value="automations">
-            <BoardAutomations boardId={board.id} columns={board.columns} />
-          </TabsContent>
-        </Tabs>
+        {/* Kanban board */}
+        {board.columns.length > 0 ? (
+          <div className="flex-1" style={{ paddingBottom: 100 }}>
+            <KanbanContent
+              value={kanbanState}
+              onValueChange={handleKanbanChange}
+              columns={board.columns}
+            >
+              <KanbanOverlay />
+            </KanbanContent>
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <p className="text-sm mb-4" style={{ color: "#8F8F8F" }}>
+              No columns yet. Add your first column to start organizing tasks.
+            </p>
+            <button
+              onClick={() => openAddColumnModal(board.id)}
+              className="text-[13px] font-medium px-3.5 py-2 rounded-md cursor-pointer transition-opacity hover:opacity-80"
+              style={{ background: "#1A1A1A", color: "#fff", border: "none" }}
+            >
+              + Add Column
+            </button>
+          </div>
+        )}
       </div>
 
       <CommandBar />

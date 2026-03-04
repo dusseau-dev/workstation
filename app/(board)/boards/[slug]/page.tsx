@@ -12,7 +12,7 @@ type Props = {
 export default async function BoardPage(props: Props) {
     const { slug } = await props.params;
     const queryClient = getQueryClient();
-    
+
     // Prefetch the board data on the server using enhanced Prisma client
     const db = await getZenstackPrisma();
     const boardData = await db.board.findUnique({
@@ -31,7 +31,7 @@ export default async function BoardPage(props: Props) {
             },
         },
     });
-    
+
     // Store the prefetched data with a server-side key
     queryClient.setQueryData(['board-server', slug], boardData);
 

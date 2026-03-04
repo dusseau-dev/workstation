@@ -3,18 +3,24 @@
 import Link from "next/link";
 import { useSession } from "@/lib/auth-client";
 
-const NAV_ITEMS = [
-  { label: "My Day", active: true },
-  { label: "Projects", active: false },
-  { label: "Canvas", active: false },
-  { label: "Workflow", active: false },
-  { label: "Analyze", active: false },
-];
+export const NAV_ITEMS = [
+  "My Day",
+  "Projects",
+  "Canvas",
+  "Workflow",
+  "Analyze",
+] as const;
+
+export type NavTab = (typeof NAV_ITEMS)[number];
 
 export function OnboardingTopBar({
   subtitle = "Onboarding",
+  activeTab = "My Day",
+  onTabChange,
 }: {
   subtitle?: string;
+  activeTab?: NavTab;
+  onTabChange?: (tab: NavTab) => void;
 }) {
   const { data: session } = useSession();
   const user = session?.user;
@@ -34,27 +40,31 @@ export function OnboardingTopBar({
           className="flex gap-1 p-1"
           style={{ background: "rgba(0,0,0,0.03)", borderRadius: 10 }}
         >
-          {NAV_ITEMS.map((item) => (
-            <button
-              key={item.label}
-              className="transition-all"
-              style={{
-                padding: "6px 16px",
-                fontSize: 13,
-                fontWeight: 500,
-                borderRadius: 6,
-                color: item.active ? "#1A1A1A" : "#8F8F8F",
-                background: item.active ? "#FFFFFF" : "transparent",
-                boxShadow: item.active
-                  ? "0 1px 3px rgba(0,0,0,0.05)"
-                  : "none",
-                cursor: "pointer",
-                border: "none",
-              }}
-            >
-              {item.label}
-            </button>
-          ))}
+          {NAV_ITEMS.map((label) => {
+            const isActive = label === activeTab;
+            return (
+              <button
+                key={label}
+                onClick={() => onTabChange?.(label)}
+                className="transition-all"
+                style={{
+                  padding: "6px 16px",
+                  fontSize: 13,
+                  fontWeight: 500,
+                  borderRadius: 6,
+                  color: isActive ? "#1A1A1A" : "#8F8F8F",
+                  background: isActive ? "#FFFFFF" : "transparent",
+                  boxShadow: isActive
+                    ? "0 1px 3px rgba(0,0,0,0.05)"
+                    : "none",
+                  cursor: "pointer",
+                  border: "none",
+                }}
+              >
+                {label}
+              </button>
+            );
+          })}
         </nav>
       </div>
 

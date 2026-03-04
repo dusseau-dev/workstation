@@ -2,7 +2,6 @@
 
 import React from "react";
 import { GripVertical, MoreVertical, Pencil, Plus, Trash2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import * as Kanban from "@/components/ui/kanban";
 import {
   DropdownMenu,
@@ -13,7 +12,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { Column, Task, User } from "@zenstackhq/runtime/models";
 import { useModalQuery } from "@/lib/use-modal-query";
-import { UserAvatar } from "@daveyplate/better-auth-ui";
 import { format, isToday, isTomorrow, isPast, startOfDay } from "date-fns";
 
 type ColumnWithTasks = Column & {
@@ -29,34 +27,38 @@ type Props = {
 
 function StatusDot({ task, isLastColumn }: { task: Task; isLastColumn: boolean }) {
   const isCompleted = task.completedAt != null || isLastColumn;
-
   if (isCompleted) {
-    return <div className="h-2 w-2 rounded-full bg-emerald-500 shrink-0 mt-1" />;
+    return <div className="shrink-0" style={{ width: 8, height: 8, borderRadius: "50%", background: "#10B981", marginTop: 4 }} />;
   }
-
   const isRecent = (Date.now() - new Date(task.updatedAt).getTime()) < 86400000;
-
   if (isRecent) {
-    return (
-      <div className="h-2 w-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.4)] shrink-0 mt-1" />
-    );
+    return <div className="shrink-0" style={{ width: 8, height: 8, borderRadius: "50%", background: "#3B82F6", boxShadow: "0 0 8px rgba(59, 130, 246, 0.4)", marginTop: 4 }} />;
   }
-
-  return <div className="h-2 w-2 rounded-full bg-muted-foreground/30 shrink-0 mt-1" />;
+  return <div className="shrink-0" style={{ width: 8, height: 8, borderRadius: "50%", background: "#C4C4C4", marginTop: 4 }} />;
 }
 
 function DueDateLabel({ date }: { date: Date | string }) {
   const d = new Date(date);
   if (isToday(d)) {
-    return <span className="text-[10px] font-medium text-amber-600 tabular-nums">Due Today</span>;
+    return (
+      <span className="flex items-center gap-1 text-[11px]" style={{ color: "#3B82F6" }}>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ opacity: 0.6 }}><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+        Due Today
+      </span>
+    );
   }
   if (isTomorrow(d)) {
-    return <span className="text-[10px] font-medium text-muted-foreground tabular-nums">Tomorrow</span>;
+    return (
+      <span className="flex items-center gap-1 text-[11px]" style={{ color: "#8F8F8F" }}>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ opacity: 0.6 }}><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
+        Tomorrow
+      </span>
+    );
   }
   if (isPast(startOfDay(d))) {
-    return <span className="text-[10px] font-medium text-red-500 tabular-nums">Overdue</span>;
+    return <span className="text-[11px]" style={{ color: "#EF4444" }}>Overdue</span>;
   }
-  return <span className="text-[10px] text-muted-foreground/60 tabular-nums">{format(d, "MMM d")}</span>;
+  return <span className="text-[11px]" style={{ color: "#C4C4C4" }}>{format(d, "MMM d")}</span>;
 }
 
 export const BoardColumnContent = React.memo(function BoardColumnContent({
@@ -80,22 +82,32 @@ export const BoardColumnContent = React.memo(function BoardColumnContent({
       value={column.id}
       className="bg-transparent border-0 p-0 gap-3"
     >
-      <div className="flex items-center justify-between px-1 pb-1">
+      {/* Column header */}
+      <div className="flex items-center justify-between px-1 pb-2">
         <Kanban.ColumnHandle asChild>
           <div className="flex items-center gap-2 cursor-grab active:cursor-grabbing">
-            <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
+            <span
+              className="text-[11px] font-semibold uppercase flex items-center gap-2"
+              style={{ color: "#C4C4C4", letterSpacing: "0.06em" }}
+            >
               {column.title}
-            </span>
-            <span className="text-[10px] font-medium text-muted-foreground/60 bg-muted/80 rounded-full px-1.5 py-0.5 min-w-[18px] text-center">
-              {column.tasks?.length || 0}
+              <span
+                className="rounded-full px-1.5 py-0.5 text-[10px] min-w-[18px] text-center"
+                style={{ background: "rgba(0,0,0,0.05)" }}
+              >
+                {column.tasks?.length || 0}
+              </span>
             </span>
           </div>
         </Kanban.ColumnHandle>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-6 w-6">
+            <button
+              className="flex items-center justify-center h-6 w-6 rounded cursor-pointer"
+              style={{ background: "transparent", border: "none", color: "#C4C4C4" }}
+            >
               <MoreVertical className="h-3.5 w-3.5" />
-            </Button>
+            </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => openEditColumnModal(column.id)}>
@@ -118,73 +130,124 @@ export const BoardColumnContent = React.memo(function BoardColumnContent({
         </DropdownMenu>
       </div>
 
-      <div className="space-y-3">
-        {column.tasks.map((task) => (
-          <Kanban.Item key={task.id} value={task.id} asChild>
-            <div
-              className="group rounded-lg border bg-card p-4 shadow-sm cursor-pointer transition-all hover:shadow-md hover:border-border/80 hover:-translate-y-0.5"
-              onClick={() => openEditTaskModal(column.id, task.id)}
-            >
-              <div className="flex flex-col gap-3">
+      {/* Task cards */}
+      <div className="flex flex-col gap-3">
+        {column.tasks.map((task) => {
+          const isRecent = (Date.now() - new Date(task.updatedAt).getTime()) < 86400000;
+          const isActive = isRecent && !task.completedAt;
+
+          return (
+            <Kanban.Item key={task.id} value={task.id} asChild>
+              <div
+                className="group rounded-lg p-4 flex flex-col gap-3 cursor-pointer transition-all"
+                style={{
+                  background: "#F7F7F7",
+                  border: isActive ? "1px solid #3B82F6" : "1px solid #DEDEDE",
+                  boxShadow: isActive
+                    ? "0 0 0 1px #3B82F6, 0 4px 12px rgba(59, 130, 246, 0.1)"
+                    : "0 2px 8px rgba(0,0,0,0.03), 0 1px 2px rgba(0,0,0,0.02)",
+                }}
+                onClick={() => openEditTaskModal(column.id, task.id)}
+                onMouseEnter={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.background = "#FFFFFF";
+                    e.currentTarget.style.borderColor = "#BFBFBF";
+                    e.currentTarget.style.transform = "translateY(-2px)";
+                    e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.05)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.background = "#F7F7F7";
+                    e.currentTarget.style.borderColor = "#DEDEDE";
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.03), 0 1px 2px rgba(0,0,0,0.02)";
+                  }
+                }}
+              >
                 {/* Title + status dot */}
-                <div className="flex items-start gap-2">
-                  <Kanban.ItemHandle asChild>
-                    <button className="mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing shrink-0">
-                      <GripVertical className="h-3.5 w-3.5 text-muted-foreground" />
-                    </button>
-                  </Kanban.ItemHandle>
-                  <span className="text-sm font-medium leading-snug flex-1 text-left">
-                    {task.title}
-                  </span>
+                <div className="flex justify-between items-start">
+                  <div className="flex items-start gap-2 flex-1">
+                    <Kanban.ItemHandle asChild>
+                      <button
+                        className="mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing shrink-0"
+                        style={{ background: "none", border: "none", padding: 0, color: "#C4C4C4" }}
+                      >
+                        <GripVertical className="h-3.5 w-3.5" />
+                      </button>
+                    </Kanban.ItemHandle>
+                    <span className="text-sm font-medium leading-snug flex-1 text-left" style={{ color: "#1A1A1A" }}>
+                      {task.title}
+                    </span>
+                  </div>
                   <StatusDot task={task} isLastColumn={isLastColumn} />
                 </div>
 
-                {/* Description preview */}
-                {task.description && (
-                  <p className="text-[11px] text-muted-foreground/70 line-clamp-1 leading-relaxed">
-                    {task.description.replace(/[#*_`>\-\[\]()]/g, "").trim()}
-                  </p>
-                )}
-
-                {/* Metadata: show priority if not MEDIUM */}
-                {task.priority !== "MEDIUM" && (
-                  <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-                    <span className="capitalize">{task.priority.toLowerCase()} priority</span>
-                  </div>
-                )}
+                {/* Meta row */}
+                <div className="flex flex-wrap gap-3 text-[11px]" style={{ color: "#8F8F8F" }}>
+                  {task.dueDate && (
+                    <DueDateLabel date={task.dueDate} />
+                  )}
+                  {task.priority !== "MEDIUM" && (
+                    <span className="capitalize">{task.priority.toLowerCase()}</span>
+                  )}
+                </div>
 
                 {/* Footer: assignee + date */}
-                <div className="flex items-center justify-between pt-3 border-t border-border/40">
-                  {task.assignee ? (
-                    <div className="flex items-center gap-1.5">
-                      <UserAvatar user={task.assignee} size="sm" className="h-5 w-5 text-[9px]" />
-                      <span className="text-[11px] text-muted-foreground truncate max-w-[100px]">
-                        {task.assignee.name || task.assignee.email}
-                      </span>
-                    </div>
-                  ) : (
-                    <span className="text-[11px] text-muted-foreground">Unassigned</span>
-                  )}
-                  {task.dueDate ? (
-                    <DueDateLabel date={task.dueDate} />
-                  ) : (
-                    <time className="text-[10px] text-muted-foreground/60 tabular-nums">
+                <div
+                  className="flex items-center justify-between pt-3"
+                  style={{ borderTop: "1px solid rgba(0,0,0,0.04)" }}
+                >
+                  <div className="flex items-center gap-1.5">
+                    {task.assignee ? (
+                      <>
+                        <div
+                          className="flex items-center justify-center rounded-full text-[9px] font-semibold shrink-0"
+                          style={{ width: 20, height: 20, background: "#333", color: "#fff", border: "1.5px solid #fff" }}
+                        >
+                          {(task.assignee.name ?? "U").charAt(0).toUpperCase()}
+                        </div>
+                        <span className="text-[11px] truncate max-w-[100px]" style={{ color: "#8F8F8F" }}>
+                          {task.assignee.name?.split(" ")[0] || "User"}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-[11px]" style={{ color: "#C4C4C4" }}>Unassigned</span>
+                    )}
+                  </div>
+                  {task.dueDate ? null : (
+                    <span className="text-[11px]" style={{ color: "#C4C4C4" }}>
                       {format(task.createdAt, "MMM d")}
-                    </time>
+                    </span>
                   )}
                 </div>
               </div>
-            </div>
-          </Kanban.Item>
-        ))}
+            </Kanban.Item>
+          );
+        })}
       </div>
 
-      {/* Persistent Add Task button */}
+      {/* Add Task button */}
       <button
         onClick={handleAddTaskClick}
-        className="w-full flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-muted-foreground/20 py-2.5 text-xs text-muted-foreground/60 hover:border-muted-foreground/40 hover:text-muted-foreground transition-colors"
+        className="w-full flex items-center justify-center gap-1.5 rounded-lg py-2.5 text-xs cursor-pointer transition-all"
+        style={{
+          border: "1px dashed #DEDEDE",
+          background: "transparent",
+          color: "#C4C4C4",
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = "rgba(0,0,0,0.02)";
+          e.currentTarget.style.color = "#8F8F8F";
+          e.currentTarget.style.borderStyle = "solid";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = "transparent";
+          e.currentTarget.style.color = "#C4C4C4";
+          e.currentTarget.style.borderStyle = "dashed";
+        }}
       >
-        <Plus className="h-3.5 w-3.5" />
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2"><path d="M8 3v10M3 8h10" /></svg>
         Add Task
       </button>
     </Kanban.Column>
