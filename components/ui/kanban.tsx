@@ -679,9 +679,8 @@ const KanbanBoard = React.forwardRef<HTMLDivElement, KanbanBoardProps>(
             {...boardProps}
             ref={forwardedRef}
             className={cn(
-              "flex size-full gap-4",
-              context.orientation === "horizontal" ? "flex-row" : "flex-col",
-              className,
+              "size-full gap-5",
+              className || (context.orientation === "horizontal" ? "flex flex-row" : "flex flex-col"),
             )}
           />
         </SortableContext>
@@ -820,7 +819,7 @@ const KanbanColumn = React.forwardRef<HTMLDivElement, KanbanColumnProps>(
             ref={composedRef}
             style={composedStyle}
             className={cn(
-              "flex size-full flex-col gap-2 rounded-lg border bg-zinc-100 p-2.5 aria-disabled:pointer-events-none aria-disabled:opacity-50 dark:bg-zinc-900",
+              "flex size-full flex-col gap-2 aria-disabled:pointer-events-none aria-disabled:opacity-50",
               {
                 "touch-none select-none": asHandle,
                 "cursor-default": context.flatCursor,
@@ -990,7 +989,7 @@ const KanbanItem = React.forwardRef<HTMLDivElement, KanbanItemProps>(
           ref={composedRef}
           style={composedStyle}
           className={cn(
-            "focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-1",
+            "focus-visible:outline-hidden",
             {
               "touch-none select-none": asHandle,
               "cursor-default": context.flatCursor,

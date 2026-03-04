@@ -1,25 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Settings, Trash2, Plus, Pencil } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { useFindUniqueBoard } from "@/hooks/model";
 import { useUpdateTask, useUpdateColumn } from "@/hooks/model";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Board, Column, Task, User } from "@zenstackhq/runtime/models";
-import { BoardSkeleton } from "@/components/boards/board-skeleton";
 import { useModalQuery } from "@/lib/use-modal-query";
-import { ActionHeading } from "./action-heading";
 import { FIND_UNIQUE_BOARD } from "@/lib/constants";
 import { KanbanContent, KanbanOverlay } from "@/components/boards/kanban-content";
+import { triggerWorkflow } from "@/lib/actions/trigger-workflow";
+import { CommandBar } from "@/components/boards/command-bar";
+import { DotGridBackground } from "@/components/onboarding/dot-grid-background";
 
 type TaskWithAssignee = Task & { assignee: User | null };
 
@@ -37,9 +29,18 @@ type Props = {
 export function BoardContent({ slug, initialData }: Props) {
   const [kanbanState, setKanbanState] = useState<
     Record<string, (Task & { assignee: User | null })[]>
-  >({});
+  >(() => {
+    if (!initialData?.columns) return {};
+    return initialData.columns.reduce(
+      (acc, column) => {
+        acc[column.id] = column.tasks || [];
+        return acc;
+      },
+      {} as Record<string, (Task & { assignee: User | null })[]>
+    );
+  });
 
-  const { modalState, openAddColumnModal, openEditBoardModal, openDeleteBoardModal } = useModalQuery();
+  const { modalState, openAddColumnModal } = useModalQuery();
 
 
   const isInitialRender = useRef(true);
@@ -59,7 +60,6 @@ export function BoardContent({ slug, initialData }: Props) {
   const {
     data: board,
     isLoading,
-    isFetching,
     error,
     refetch,
     queryKey,
@@ -83,7 +83,6 @@ export function BoardContent({ slug, initialData }: Props) {
       isInitialRender.current = false;
       return;
     }
-    console.log("refetching board");
     void refetch();
   }, [slug, refetch]);
 
@@ -100,9 +99,36 @@ export function BoardContent({ slug, initialData }: Props) {
     );
   }, [board?.columns]);
 
-  useEffect(() => {
+  // Sync server data into local optimistic state during render (avoids extra useEffect cycle)
+  const prevServerData = useRef(serverKanbanData);
+  if (prevServerData.current !== serverKanbanData) {
+    prevServerData.current = serverKanbanData;
     setKanbanState(serverKanbanData);
-  }, [serverKanbanData]);
+  }
+
+  // Fire trigger for card move events (fire-and-forget)
+  const fireTrigger = useCallback(
+    (taskId: string, task: TaskWithAssignee, fromColumnId: string, toColumnId: string) => {
+      if (!board?.id) return;
+      void triggerWorkflow({
+        boardId: board.id,
+        eventType: "CARD_MOVED",
+        cardId: taskId,
+        cardData: {
+          title: task.title,
+          description: task.description,
+          priority: task.priority,
+          assigneeId: task.assigneeId,
+          columnId: toColumnId,
+        },
+        fromColumnId,
+        toColumnId,
+      }).catch((err) => {
+        console.warn("Trigger fire failed:", err);
+      });
+    },
+    [board?.id]
+  );
 
   // Handle kanban updates
   const handleKanbanChange = useCallback(
@@ -176,7 +202,8 @@ export function BoardContent({ slug, initialData }: Props) {
         }
       });
 
-      // Process task changes
+      // Process task changes — detect column moves for triggers
+      const movedTasks: Array<{ taskId: string; task: TaskWithAssignee; fromColumnId: string; toColumnId: string }> = [];
       Object.entries(newData).forEach(([columnId, tasks]) => {
         tasks.forEach((task, index) => {
           const currentTask = taskMap.get(task.id);
@@ -192,6 +219,10 @@ export function BoardContent({ slug, initialData }: Props) {
                 })
               );
             }
+
+            if (needsColumnUpdate) {
+              movedTasks.push({ taskId: task.id, task, fromColumnId: currentTask.columnId, toColumnId: columnId });
+            }
           }
         });
       });
@@ -199,6 +230,10 @@ export function BoardContent({ slug, initialData }: Props) {
       // Execute mutations in parallel to avoid race conditions and improve performance
       try {
         await Promise.all(mutations);
+        // Fire CARD_MOVED triggers after DB writes succeed
+        movedTasks.forEach(({ taskId, task, fromColumnId, toColumnId }) => {
+          fireTrigger(taskId, task, fromColumnId, toColumnId);
+        });
       } catch (error) {
         console.error("Error updating kanban data:", error);
         // On failure, revert to the previous state
@@ -210,19 +245,21 @@ export function BoardContent({ slug, initialData }: Props) {
         await queryClient.invalidateQueries({ queryKey });
       }
     },
-    [board, queryClient, queryKey, updateColumn, updateTask]
+    [board, queryClient, queryKey, updateColumn, updateTask, fireTrigger]
   );
 
 
   if (isLoading) {
     return (
-      <div className="container mx-auto py-8">
-        <div className="flex justify-between items-center mb-8">
-          <Skeleton className="h-9 w-64" />
-          <Skeleton className="h-9 w-24" />
-        </div>
-        <div className="mb-8">
-          <BoardSkeleton />
+      <div
+        className="relative min-h-screen flex flex-col overflow-hidden"
+        style={{ backgroundColor: "#EBEBEB", fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif" }}
+      >
+        <DotGridBackground />
+        <div className="relative z-[1] flex-1 p-10">
+          <Skeleton className="h-4 w-32 mb-3" style={{ background: "#DEDEDE" }} />
+          <Skeleton className="h-8 w-64 mb-2" style={{ background: "#DEDEDE" }} />
+          <Skeleton className="h-4 w-48" style={{ background: "#DEDEDE" }} />
         </div>
       </div>
     );
@@ -230,79 +267,81 @@ export function BoardContent({ slug, initialData }: Props) {
 
   if (error || !board) {
     return (
-      <div className="container mx-auto py-8">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-secondary-foreground">Board not found</h1>
+      <div
+        className="relative min-h-screen flex flex-col"
+        style={{ backgroundColor: "#EBEBEB", fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif" }}
+      >
+        <div className="relative z-[1] p-10">
+          <h1 className="text-[28px] font-medium" style={{ color: "#1A1A1A", letterSpacing: "-0.02em" }}>Board not found</h1>
+          <p className="text-sm mt-2" style={{ color: "#8F8F8F" }}>
+            {error?.message || "The board you're looking for doesn't exist or you don't have access to it."}
+          </p>
         </div>
-        <p className="text-muted-foreground">
-          {error?.message ||
-            "The board you're looking for doesn't exist or you don't have access to it."}
-        </p>
       </div>
     );
   }
 
-  return (
-    <div className="container mx-auto py-8">
-      <ActionHeading title={board.name} isLoading={isLoading} isFetching={isFetching} isPaused={isAnyModalOpen}>
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline">
-                <Settings className="mr-2 h-4 w-4" />
-                Actions
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => openAddColumnModal(board.id)}>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Column
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => openEditBoardModal()}>
-                <Pencil className="mr-2 h-4 w-4" />
-                Edit Board
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => openDeleteBoardModal()}
-                className="text-red-600 focus:text-red-600"
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete Board
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-        </DropdownMenu>
-      </ActionHeading>
+  const statusLabel = board.status?.replace(/_/g, " ") || "Active";
 
-      <div className="mb-8">
-        {board.columns && board.columns.length > 0 ? (
-          <KanbanContent
-            value={kanbanState}
-            onValueChange={handleKanbanChange}
-            columns={board.columns}
-          >
-            <KanbanOverlay />
-          </KanbanContent>
+  return (
+    <div
+      className="relative min-h-screen flex flex-col overflow-hidden"
+      style={{ backgroundColor: "#EBEBEB", color: "#1A1A1A", fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif" }}
+    >
+      <DotGridBackground />
+
+      <div className="relative z-[1] flex-1 flex flex-col p-10 w-full">
+        {/* Breadcrumb */}
+        <nav className="flex items-center gap-2 text-[13px] mb-3" style={{ color: "#8F8F8F" }}>
+          <a href="/onboarding" className="no-underline transition-colors hover:opacity-70" style={{ color: "#8F8F8F" }}>Workflows</a>
+          <span style={{ color: "#C4C4C4" }}>/</span>
+          <span style={{ color: "#1A1A1A" }}>{board.name}</span>
+        </nav>
+
+        {/* Header */}
+        <header className="mb-8">
+          <h1 className="text-[28px] font-medium flex items-center gap-3" style={{ letterSpacing: "-0.02em" }}>
+            {board.name}
+            <span
+              className="text-[10px] font-semibold uppercase px-2 py-1 rounded"
+              style={{ background: "#E0F2FE", color: "#0369A1", letterSpacing: "0.05em" }}
+            >
+              {statusLabel}
+            </span>
+          </h1>
+          {board.description && (
+            <p className="text-sm mt-1" style={{ color: "#8F8F8F" }}>{board.description}</p>
+          )}
+        </header>
+
+        {/* Kanban board */}
+        {board.columns.length > 0 ? (
+          <div className="flex-1" style={{ paddingBottom: 100 }}>
+            <KanbanContent
+              value={kanbanState}
+              onValueChange={handleKanbanChange}
+              columns={board.columns}
+            >
+              <KanbanOverlay />
+            </KanbanContent>
+          </div>
         ) : (
           <div className="text-center py-12">
-            <div className="flex flex-col items-center gap-4">
-              <div className="rounded-full bg-muted p-6">
-                <Plus className="h-8 w-8 text-muted-foreground" />
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-lg font-semibold">No columns yet</h3>
-                <p className="text-muted-foreground max-w-md">
-                  This board doesn&apos;t have any columns yet. Create your
-                  first column to start organizing your tasks.
-                </p>
-              </div>
-              <Button onClick={() => openAddColumnModal(board.id)}>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Column
-              </Button>
-            </div>
+            <p className="text-sm mb-4" style={{ color: "#8F8F8F" }}>
+              No columns yet. Add your first column to start organizing tasks.
+            </p>
+            <button
+              onClick={() => openAddColumnModal(board.id)}
+              className="text-[13px] font-medium px-3.5 py-2 rounded-md cursor-pointer transition-opacity hover:opacity-80"
+              style={{ background: "#1A1A1A", color: "#fff", border: "none" }}
+            >
+              + Add Column
+            </button>
           </div>
         )}
       </div>
+
+      <CommandBar />
     </div>
   );
 }

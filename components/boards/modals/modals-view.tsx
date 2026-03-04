@@ -10,6 +10,9 @@ import { AddColumnForm } from "@/components/boards/forms/add-column-form";
 import { DeleteColumnForm } from "@/components/boards/forms/delete-column-form";
 import { EditColumnForm } from "@/components/boards/forms/edit-column-form";
 import { AddTaskForm, EditTaskActions, EditTaskForm } from "@/components/boards/forms/task-forms";
+import { AddWorkflowForm } from "@/components/workflows/forms/add-workflow-form";
+import { EditWorkflowForm } from "@/components/workflows/forms/edit-workflow-form";
+import { DeleteWorkflowForm } from "@/components/workflows/forms/delete-workflow-form";
 
 type ModalConfig = {
   title: string;
@@ -17,6 +20,7 @@ type ModalConfig = {
   requiresBoardId?: boolean;
   requiresColumnId?: boolean;
   requiresTaskId?: boolean;
+  requiresWorkflowId?: boolean;
   isAlert?: boolean;
   component: (props: {
     onClose: () => void;
@@ -24,6 +28,7 @@ type ModalConfig = {
     boardId?: string;
     columnId?: string;
     taskId?: string;
+    workflowId?: string;
   }) => React.ReactElement;
   actions?: React.ReactNode | ((props: {
     onClose: () => void;
@@ -31,6 +36,7 @@ type ModalConfig = {
     boardId?: string;
     columnId?: string;
     taskId?: string;
+    workflowId?: string;
   }) => React.ReactNode);
 };
 
@@ -125,6 +131,30 @@ const modalConfigs: Record<string, ModalConfig> = {
       <EditTaskActions taskId={taskId!} onSuccess={onSuccess} />
     ),
   },
+  "add-workflow": {
+    title: "New Workflow",
+    description: "Create a new workflow for your organization.",
+    component: ({ onClose, onSuccess }) => (
+      <AddWorkflowForm onClose={onClose} onSuccess={onSuccess} />
+    ),
+  },
+  "edit-workflow": {
+    title: "Edit Workflow",
+    description: "Edit the workflow.",
+    requiresWorkflowId: true,
+    component: ({ onClose, workflowId }) => (
+      <EditWorkflowForm workflowId={workflowId!} onClose={onClose} onSuccess={onClose} />
+    ),
+  },
+  "delete-workflow": {
+    title: "Delete Workflow",
+    description: "Are you sure you want to delete this workflow? This action cannot be undone. All triggers and execution history will be permanently removed.",
+    requiresWorkflowId: true,
+    isAlert: true,
+    component: ({ onClose, onSuccess, workflowId }) => (
+      <DeleteWorkflowForm workflowId={workflowId!} onClose={onClose} onSuccess={onSuccess} />
+    ),
+  },
 };
 
 export function ModalsView() {
@@ -144,6 +174,17 @@ export function ModalsView() {
     router.push("/boards");
   }, [router]);
 
+  const onAddWorkflowSuccess = useCallback(
+    (workflowId: string) => {
+      router.push(`/workflows/${workflowId}`);
+    },
+    [router]
+  );
+
+  const onDeleteWorkflowSuccess = useCallback(() => {
+    router.push("/workflows");
+  }, [router]);
+
   const closeModal = useCallback(() => {
     closeQueryModal();
   }, [closeQueryModal]);
@@ -161,6 +202,17 @@ export function ModalsView() {
     onDeleteBoardSuccess();
   }, [onDeleteBoardSuccess]);
 
+  const addWorkflowSuccessWithParam = useCallback(
+    (param?: string) => {
+      if (param) onAddWorkflowSuccess(param);
+    },
+    [onAddWorkflowSuccess]
+  );
+
+  const deleteWorkflowSuccessWrapper = useCallback(() => {
+    onDeleteWorkflowSuccess();
+  }, [onDeleteWorkflowSuccess]);
+
   // Memoize the success callback based on modal type
   const successCallback = useMemo(() => {
     switch (modalState.openModalType) {
@@ -168,10 +220,14 @@ export function ModalsView() {
         return addBoardSuccessWithParam;
       case "delete-board":
         return deleteBoardSuccessWrapper;
+      case "add-workflow":
+        return addWorkflowSuccessWithParam;
+      case "delete-workflow":
+        return deleteWorkflowSuccessWrapper;
       default:
         return closeModal;
     }
-  }, [modalState.openModalType, addBoardSuccessWithParam, deleteBoardSuccessWrapper, closeModal]);
+  }, [modalState.openModalType, addBoardSuccessWithParam, deleteBoardSuccessWrapper, addWorkflowSuccessWithParam, deleteWorkflowSuccessWrapper, closeModal]);
 
   if (!modalState.openModalType) return null;
 
@@ -181,21 +237,25 @@ export function ModalsView() {
     !config ||
     (config.requiresBoardId && !selectedBoardId) ||
     (config.requiresColumnId && !modalState.selectedColumnId) ||
-    (config.requiresTaskId && !modalState.selectedTaskId)
+    (config.requiresTaskId && !modalState.selectedTaskId) ||
+    (config.requiresWorkflowId && !modalState.selectedWorkflowId)
   ) {
     return null;
   }
 
   const ModalWrapper = config.isAlert ? CommonAlertModal : CommonModal;
 
-  const renderedActions = typeof config.actions === 'function' 
-    ? config.actions({
-        onClose: closeModal,
-        onSuccess: successCallback,
-        boardId: selectedBoardId as string,
-        columnId: modalState.selectedColumnId,
-        taskId: modalState.selectedTaskId,
-      })
+  const componentProps = {
+    onClose: closeModal,
+    onSuccess: successCallback,
+    boardId: selectedBoardId as string,
+    columnId: modalState.selectedColumnId,
+    taskId: modalState.selectedTaskId,
+    workflowId: modalState.selectedWorkflowId,
+  };
+
+  const renderedActions = typeof config.actions === 'function'
+    ? config.actions(componentProps)
     : config.actions;
 
   return (
@@ -205,13 +265,7 @@ export function ModalsView() {
       description={config.description}
       actions={renderedActions}
     >
-      {config.component({
-        onClose: closeModal,
-        onSuccess: successCallback,
-        boardId: selectedBoardId as string,
-        columnId: modalState.selectedColumnId,
-        taskId: modalState.selectedTaskId,
-      })}
+      {config.component(componentProps)}
     </ModalWrapper>
   );
 }

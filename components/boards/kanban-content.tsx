@@ -124,12 +124,16 @@ const KanbanContentComponent = ({
     >
       <Kanban.Board
         className={cn(
-          "flex flex-col gap-4 md:auto-rows-fr md:grid-cols-1 md:grid",
+          "grid grid-cols-1 gap-5",
           mdClass
         )}
       >
-        {orderedColumns.map((column) => (
-          <BoardColumnContent key={column.id} column={column} />
+        {orderedColumns.map((column, index) => (
+          <BoardColumnContent
+            key={column.id}
+            column={column}
+            isLastColumn={index === orderedColumns.length - 1}
+          />
         ))}
       </Kanban.Board>
       {children}

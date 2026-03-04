@@ -15,12 +15,15 @@ const EMAIL_LINK_BASE_URL = process.env.BETTER_AUTH_URL || "https://www.multiboa
 
 
 export const auth = betterAuth({
+    trustedOrigins: process.env.BETTER_AUTH_TRUSTED_ORIGINS
+        ? process.env.BETTER_AUTH_TRUSTED_ORIGINS.split(",")
+        : [],
     database: prismaAdapter(prisma, {
         provider: "postgresql",
     }),
     emailAndPassword: {
         enabled: true,
-		requireEmailVerification: true,
+		requireEmailVerification: false,
         async sendResetPassword({ user, url }) {
 			const name = user.name || user.email.split("@")[0]
 			await resend.emails.send({

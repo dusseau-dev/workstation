@@ -28,9 +28,13 @@ import { useMemo, memo, useState } from "react";
 import AutoForm, { AutoFormSubmit } from "@/components/ui/auto-form";
 import { useActiveOrganization, useSession } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
-import { useCreateTask, useUpdateTask, useDeleteTask } from "@/hooks/model/task";
+import {
+  useCreateTask,
+  useDeleteTask,
+  useFindUniqueBoard,
+  useUpdateTask,
+} from "@/hooks/model";
 import { FIND_UNIQUE_BOARD } from "@/lib/constants";
-import { useFindUniqueBoard } from "@/hooks/model/board";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -59,6 +63,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { triggerWorkflow } from "@/lib/actions/trigger-workflow";
+import { CardWorkflowsSection } from "@/components/boards/card-workflows-section";
 
 export type ColumnWithTasks = Column & {
   tasks: (Task & {
@@ -125,17 +131,36 @@ const AddTaskFormComponent = ({
       existingTasks && existingTasks.length > 0
         ? Math.max(...existingTasks.map((task) => task.order)) + 1
         : 0;
-    await createTask({
+    const created = await createTask({
       data: {
         title: data.title!,
         description: data.description,
         priority: data.priority!,
         assigneeId: data.assigneeId || null,
+        dueDate: data.dueDate || null,
         columnId,
         order: nextOrder,
       },
     });
     toast.success("Task created successfully");
+
+    // Fire CARD_CREATED trigger (fire-and-forget)
+    if (created?.id) {
+      void triggerWorkflow({
+        boardId,
+        eventType: "CARD_CREATED",
+        cardId: created.id,
+        cardData: {
+          title: data.title,
+          description: data.description,
+          priority: data.priority,
+          assigneeId: data.assigneeId || null,
+          dueDate: data.dueDate || null,
+          columnId,
+        },
+      }).catch((err) => { console.warn("Trigger fire failed:", err); });
+    }
+
     onSuccess();
   };
 
@@ -211,6 +236,7 @@ const EditTaskFormComponent = ({
       priority: task.priority,
       columnId: task.columnId,
       assigneeId: task.assigneeId || "",
+      dueDate: task.dueDate || undefined,
     };
   }, [task]);
 
@@ -244,6 +270,15 @@ const EditTaskFormComponent = ({
   } = useUpdateTask({ optimisticUpdate: false });
 
   const onSubmit = async (data: z.infer<typeof schema>) => {
+    // Detect which fields changed for trigger matching
+    const changedFields: string[] = [];
+    if (data.title !== task?.title) changedFields.push("title");
+    if (data.description !== task?.description) changedFields.push("description");
+    if (data.priority !== task?.priority) changedFields.push("priority");
+    if (data.columnId !== task?.columnId) changedFields.push("columnId");
+    if ((data.assigneeId || null) !== (task?.assigneeId || null)) changedFields.push("assigneeId");
+    if (String(data.dueDate || "") !== String(task?.dueDate || "")) changedFields.push("dueDate");
+
     await updateTask({
       where: { id: taskId },
       data: {
@@ -252,41 +287,90 @@ const EditTaskFormComponent = ({
         priority: data.priority,
         columnId: data.columnId,
         assigneeId: data.assigneeId || null,
+        dueDate: data.dueDate || null,
       },
     });
     toast.success("Task updated successfully");
+
+    const cardData = {
+      title: data.title,
+      description: data.description,
+      priority: data.priority,
+      assigneeId: data.assigneeId || null,
+      dueDate: data.dueDate || null,
+      columnId: data.columnId,
+    };
+
+    // Fire CARD_MOVED trigger if column changed (fire-and-forget)
+    const columnChanged = changedFields.includes("columnId");
+    if (columnChanged && task?.columnId) {
+      void triggerWorkflow({
+        boardId,
+        eventType: "CARD_MOVED",
+        cardId: taskId,
+        cardData,
+        fromColumnId: task.columnId,
+        toColumnId: data.columnId,
+      }).catch((err) => { console.warn("Trigger fire failed:", err); });
+    }
+
+    // Fire CARD_UPDATED trigger for non-column field changes (fire-and-forget)
+    const nonColumnChanges = changedFields.filter((f) => f !== "columnId");
+    if (nonColumnChanges.length > 0) {
+      void triggerWorkflow({
+        boardId,
+        eventType: "CARD_UPDATED",
+        cardId: taskId,
+        cardData,
+        changedFields: nonColumnChanges,
+      }).catch((err) => { console.warn("Trigger fire failed:", err); });
+    }
+
     onSuccess();
   };
 
   return (
-    <AutoForm
-      className="space-y-2 first:*:grid first:*:grid-cols-2 first:*:gap-x-4"
-      formSchema={schema}
-      fieldConfig={config}
-      values={initialData}
-      onSubmit={onSubmit}
-    >
-      {updateTaskError && (
-        <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
-          {updateTaskError?.message ||
-            `Failed to update task. Please try again.`}
-        </div>
-      )}
+    <>
+      <AutoForm
+        className="space-y-2 first:*:grid first:*:grid-cols-2 first:*:gap-x-4"
+        formSchema={schema}
+        fieldConfig={config}
+        values={initialData}
+        onSubmit={onSubmit}
+      >
+        {updateTaskError && (
+          <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
+            {updateTaskError?.message ||
+              `Failed to update task. Please try again.`}
+          </div>
+        )}
 
-      <div className="flex gap-2 pt-4">
-        <AutoFormSubmit disabled={isUpdatingTask}>
-          {isUpdatingTask ? "Updating..." : "Update Task"}
-        </AutoFormSubmit>
-        <Button
-          variant="outline"
-          onClick={onClose}
-          disabled={isUpdatingTask}
-          type="button"
-        >
-          Cancel
-        </Button>
-      </div>
-    </AutoForm>
+        <div className="flex gap-2 pt-4">
+          <AutoFormSubmit disabled={isUpdatingTask}>
+            {isUpdatingTask ? "Updating..." : "Update Task"}
+          </AutoFormSubmit>
+          <Button
+            variant="outline"
+            onClick={onClose}
+            disabled={isUpdatingTask}
+            type="button"
+          >
+            Cancel
+          </Button>
+        </div>
+      </AutoForm>
+      <CardWorkflowsSection
+        taskId={taskId}
+        boardId={boardId}
+        taskData={task ? {
+          title: task.title,
+          description: task.description,
+          priority: task.priority,
+          assigneeId: task.assigneeId,
+          columnId: task.columnId,
+        } : undefined}
+      />
+    </>
   );
 };
 
@@ -510,8 +594,14 @@ function createTaskFieldConfig(
         <div className="col-span-2">{children}</div>
       ),
     },
-    assigneeId: {
+    dueDate: {
       order: 2,
+      inputProps: {
+        placeholder: "Select due date",
+      },
+    },
+    assigneeId: {
+      order: 4,
       fieldType: ({
         isRequired,
         field,

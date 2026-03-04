@@ -42,3 +42,9 @@ next-env.d.ts
 
 # zenstack
 lib/generated
+
+# duplicate skills symlink created by npx skills add
+.agent/
+
+# reference template repo
+workflow-builder-template/

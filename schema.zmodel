@@ -18,7 +18,7 @@ plugin zod {
   provider = '@core/zod'
   compile = false
   modelOnly = true
-  generateModels = ["Board", "Column", "Task", "Post", "Tag", "PostTag"]
+  generateModels = ["Board", "Column", "Task", "Post", "Tag", "PostTag", "Workflow", "WorkflowTrigger", "WorkflowExecution", "WorkflowExecutionLog"]
 }
 
 plugin hooks {
@@ -53,6 +53,49 @@ enum Priority {
   URGENT
 }
 
+enum WorkflowStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum TriggerType {
+  MANUAL
+  CARD_CREATED
+  CARD_MOVED
+  CARD_UPDATED
+  SCHEDULE
+  WEBHOOK
+}
+
+enum ExecutionStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELED
+}
+
+enum LogStatus {
+  RUNNING
+  COMPLETED
+  FAILED
+  SKIPPED
+}
+
+enum ConnectionStatus {
+  CONNECTED
+  DISCONNECTED
+}
+
+enum BoardStatus {
+  ACTIVE
+  IN_PROGRESS
+  COMPLETED
+  ON_HOLD
+  ARCHIVED
+}
+
 model User {
   id            String    @id
   name          String    @allow('read', true, true)  // Allow anonymous users to read name field, this is used for blog authors
@@ -69,6 +112,9 @@ model User {
   ownedBoards  Board[]   @relation("BoardOwner")
   userBoards   Board[]   @relation("UserBoards")
   authoredPosts Post[]  @relation("AuthoredPosts")
+  createdWorkflows     Workflow[]            @relation("WorkflowCreator")
+  triggeredExecutions  WorkflowExecution[]   @relation("ExecutionTriggeredBy")
+  composioConnections  ComposioConnection[]  @relation("ComposioConnections")
 
   role       String?
   banned     Boolean?
@@ -146,9 +192,13 @@ model Organization {
   logo        String?
   createdAt   DateTime
   metadata    String?
-  members     Member[]
-  invitations Invitation[]
-  boards      Board[]
+  members              Member[]
+  invitations          Invitation[]
+  boards               Board[]
+  workflows            Workflow[]
+  workflowTriggers     WorkflowTrigger[]
+  workflowExecutions   WorkflowExecution[]
+  composioConnections  ComposioConnection[]
 
   @@unique([slug])
   @@map("organization")
@@ -184,15 +234,19 @@ model Invitation {
 }
 
 model Board {
-  id             String   @id @default(cuid())
+  id             String       @id @default(cuid())
   name           String
-  createdAt      DateTime @default(now())
+  description    String?
+  status         BoardStatus  @default(ACTIVE)
+  createdAt      DateTime     @default(now())
   organization   Organization? @relation(fields: [organizationId], references: [id])
   organizationId String?  @default(auth().organizationId) @allow('update', false)
   owner          User     @relation("BoardOwner", fields: [ownerId], references: [id])
   ownerId        String   @default(auth().userId) @allow('update', false)
-  columns        Column[] @relation("BoardColumns")
-  users          User[]   @relation("UserBoards")
+  columns              Column[]              @relation("BoardColumns")
+  users                User[]                @relation("UserBoards")
+  workflowTriggers     WorkflowTrigger[]
+  workflowExecutions   WorkflowExecution[]
 
   @@validate(length(name, 1, 512, 'Name must be between 1 and 512 characters'))
 
@@ -244,6 +298,7 @@ model Task {
   assignee    User?    @relation("AssignedTasks", fields: [assigneeId], references: [id])
   assigneeId  String?
   completedAt DateTime?
+  dueDate     DateTime?
   isArchived  Boolean  @default(false)
 
   @@map("task")
@@ -329,4 +384,134 @@ model Post {
   
   // Admin users with blog permissions can do everything
   @@allow('all', auth() != null && auth().userRole == 'admin')
+}
+
+// ============================================================
+// Workflow Models
+// ============================================================
+
+model Workflow {
+  id             String         @id @default(cuid())
+  name           String
+  description    String?
+  status         WorkflowStatus @default(DRAFT)
+  nodesJson      Json           @default("[]")
+  edgesJson      Json           @default("[]")
+  organization   Organization   @relation(fields: [organizationId], references: [id])
+  organizationId String         @default(auth().organizationId) @allow('update', false)
+  createdBy      User           @relation("WorkflowCreator", fields: [createdById], references: [id])
+  createdById    String         @default(auth().userId) @allow('update', false)
+  triggers       WorkflowTrigger[]
+  executions     WorkflowExecution[]
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@validate(length(name, 1, 255, 'Name must be between 1 and 255 characters'))
+  @@map("workflow")
+
+  @@deny('all', auth() == null)
+  @@deny('all', auth().organizationId != organizationId)
+  @@allow('create', auth().userId == createdById)
+  @@allow('all', auth().userId == createdById || auth().organizationRole == 'owner' || auth().organizationRole == 'admin')
+  @@allow('read', true)
+}
+
+model WorkflowTrigger {
+  id             String       @id @default(cuid())
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String       @default(auth().organizationId) @allow('update', false)
+  workflow       Workflow      @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  workflowId     String
+  board          Board?        @relation(fields: [boardId], references: [id])
+  boardId        String?
+  triggerType    TriggerType
+  configJson     Json          @default("{}")
+  enabled        Boolean       @default(true)
+  executions     WorkflowExecution[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@map("workflow_trigger")
+
+  @@deny('all', auth() == null)
+  @@deny('all', auth().organizationId != organizationId)
+  @@allow('create', check(workflow, 'update'))
+  @@allow('read', check(workflow, 'read'))
+  @@allow('update', check(workflow, 'update'))
+  @@allow('delete', check(workflow, 'update'))
+}
+
+model WorkflowExecution {
+  id                String           @id @default(cuid())
+  organization      Organization     @relation(fields: [organizationId], references: [id])
+  organizationId    String           @default(auth().organizationId) @allow('update', false)
+  workflow          Workflow          @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  workflowId        String
+  board             Board?            @relation(fields: [boardId], references: [id])
+  boardId           String?
+  cardId            String?
+  status            ExecutionStatus   @default(PENDING)
+  inputJson         Json?
+  outputJson        Json?
+  error             String?
+  triggeredByUser   User?             @relation("ExecutionTriggeredBy", fields: [triggeredByUserId], references: [id])
+  triggeredByUserId String?
+  trigger           WorkflowTrigger?  @relation(fields: [triggerId], references: [id])
+  triggerId         String?
+  startedAt         DateTime          @default(now())
+  completedAt       DateTime?
+  logs              WorkflowExecutionLog[]
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  @@map("workflow_execution")
+
+  @@deny('all', auth() == null)
+  @@deny('all', auth().organizationId != organizationId)
+  @@allow('read', check(workflow, 'read'))
+  @@allow('create', check(workflow, 'read'))
+  @@allow('update,delete', check(workflow, 'update'))
+}
+
+model WorkflowExecutionLog {
+  id           String            @id @default(cuid())
+  execution    WorkflowExecution @relation(fields: [executionId], references: [id], onDelete: Cascade)
+  executionId  String
+  nodeId       String
+  nodeName     String
+  status       LogStatus         @default(RUNNING)
+  inputJson    Json?
+  outputJson   Json?
+  error        String?
+  startedAt    DateTime          @default(now())
+  completedAt  DateTime?
+  createdAt    DateTime          @default(now())
+
+  @@map("workflow_execution_log")
+
+  @@allow('read', check(execution, 'read'))
+  @@allow('create,update', check(execution, 'update'))
+  @@allow('delete', check(execution, 'delete'))
+}
+
+model ComposioConnection {
+  id               String           @id @default(cuid())
+  organization     Organization     @relation(fields: [organizationId], references: [id])
+  organizationId   String           @default(auth().organizationId) @allow('update', false)
+  user             User             @relation("ComposioConnections", fields: [userId], references: [id])
+  userId           String           @default(auth().userId) @allow('update', false)
+  appName          String
+  composioEntityId String
+  status           ConnectionStatus @default(CONNECTED)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@unique([organizationId, userId, appName])
+  @@map("composio_connection")
+  @@openapi.ignore()
+
+  @@deny('all', auth() == null)
+  @@deny('all', auth().organizationId != organizationId)
+  @@allow('all', auth().userId == userId)
+  @@allow('read', auth().organizationRole == 'owner' || auth().organizationRole == 'admin')
 }

@@ -15,3 +15,15 @@ export const FIND_UNIQUE_BOARD =
             },
         },
     });
+
+export const FIND_UNIQUE_WORKFLOW =
+    (workflowId: string) => ({
+        where: { id: workflowId },
+        include: {
+            triggers: true,
+            executions: {
+                orderBy: { createdAt: "desc" as const },
+                take: 10,
+            },
+        },
+    });

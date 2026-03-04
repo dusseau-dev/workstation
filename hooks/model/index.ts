@@ -3,7 +3,6 @@
  ******************************************************************************/
 
 /* eslint-disable */
-// @ts-nocheck
 
 export * from './user';
 export * from './session';
@@ -18,6 +17,11 @@ export * from './task';
 export * from './tag';
 export * from './post-tag';
 export * from './post';
+export * from './workflow';
+export * from './workflow-trigger';
+export * from './workflow-execution';
+export * from './workflow-execution-log';
+export * from './composio-connection';
 export { getQueryKey } from '@zenstackhq/tanstack-query/runtime-v5';
 export { Provider } from '@zenstackhq/tanstack-query/runtime-v5/react';
 export { default as metadata } from './__model_meta';
